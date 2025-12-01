@@ -1,0 +1,40 @@
+{
+  "name": "taylor-media-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup": "tsx scripts/setup.ts",
+    "quick-setup": "tsx scripts/quick-setup.ts",
+    "init-db": "tsx scripts/init-db.ts",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.0.0",
+    "@vercel/postgres": "^0.10.0",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "next": "^15.1.0",
+    "next-auth": "^4.24.13",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}
