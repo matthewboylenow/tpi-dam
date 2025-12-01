@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { MediaFilters } from "@/components/media/MediaFilters";
@@ -24,7 +24,7 @@ export function AdminClient({ user }: Props) {
   const [clientName, setClientName] = useState("");
   const [tag, setTag] = useState("");
 
-  async function fetchMedia() {
+  const fetchMedia = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -45,11 +45,11 @@ export function AdminClient({ user }: Props) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [search, clientName, tag]);
 
   useEffect(() => {
     fetchMedia();
-  }, [search, clientName, tag]);
+  }, [fetchMedia]);
 
   return (
     <Shell user={user}>

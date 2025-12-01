@@ -1,15 +1,12 @@
 import { sql } from "@vercel/postgres";
-import {
-  User,
-  SafeUser,
-  CreateUserInput,
+import type { User, SafeUser, CreateUserInput } from "@/types/user";
+import type {
   MediaAsset,
   MediaAssetWithTags,
   MediaAssetFull,
   CreateMediaAssetInput,
   MediaFilterParams,
 } from "@/types/media";
-import type { User as UserType } from "@/types/user";
 
 // ============================================================================
 // User Queries
@@ -29,7 +26,7 @@ export async function createUser(
   return result.rows[0] as SafeUser;
 }
 
-export async function getUserByEmail(email: string): Promise<UserType | null> {
+export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await sql`
     SELECT id, email, name, password_hash, role, created_at
     FROM users
@@ -37,7 +34,7 @@ export async function getUserByEmail(email: string): Promise<UserType | null> {
     LIMIT 1
   `;
 
-  return result.rows[0] as UserType | null;
+  return result.rows[0] as User | null;
 }
 
 export async function getUserById(id: string): Promise<SafeUser | null> {

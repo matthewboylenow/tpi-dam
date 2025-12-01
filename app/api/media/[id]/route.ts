@@ -8,7 +8,7 @@ import { getMediaAssetById, deleteMediaAsset } from "@/lib/db/queries";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -16,7 +16,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const media = await getMediaAssetById(params.id);
+    const { id } = await params;
+    const media = await getMediaAssetById(id);
 
     if (!media) {
       return NextResponse.json(
@@ -52,7 +53,7 @@ export async function GET(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -60,7 +61,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const media = await getMediaAssetById(params.id);
+    const { id } = await params;
+    const media = await getMediaAssetById(id);
 
     if (!media) {
       return NextResponse.json(
@@ -77,7 +79,7 @@ export async function DELETE(
       );
     }
 
-    await deleteMediaAsset(params.id);
+    await deleteMediaAsset(id);
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MediaAssetFull } from "@/types/media";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -34,11 +35,16 @@ export function MediaDetailModal({ media, onClose }: Props) {
               Your browser does not support the video tag.
             </video>
           ) : (
-            <img
-              src={media.blob_url}
-              alt={media.caption || "Media asset"}
-              className="w-full max-h-[60vh] object-contain"
-            />
+            <div className="relative w-full" style={{ maxHeight: "60vh" }}>
+              <Image
+                src={media.blob_url}
+                alt={media.caption || "Media asset"}
+                width={1200}
+                height={800}
+                className="w-full h-auto max-h-[60vh] object-contain"
+                unoptimized
+              />
+            </div>
           )}
         </div>
 

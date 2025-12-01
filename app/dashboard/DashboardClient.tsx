@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { MediaGrid } from "@/components/media/MediaGrid";
@@ -27,7 +27,7 @@ export function DashboardClient({ user }: Props) {
   const [clientName, setClientName] = useState("");
   const [tag, setTag] = useState("");
 
-  async function fetchMedia() {
+  const fetchMedia = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -48,11 +48,11 @@ export function DashboardClient({ user }: Props) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [search, clientName, tag]);
 
   useEffect(() => {
     fetchMedia();
-  }, [search, clientName, tag]);
+  }, [fetchMedia]);
 
   function handleUploadSuccess() {
     setShowUploadForm(false);
