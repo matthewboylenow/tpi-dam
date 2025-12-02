@@ -121,10 +121,10 @@ export function DashboardClient({ user }: Props) {
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
-  // When viewing a specific folder, show only files in that folder
-  // When viewing "All Media", show ALL files
-  const displayMedia = selectedFolderId
-    ? regularMedia.filter((m) => m.folder_id === selectedFolderId)
+  // When viewing "All Media", only show files without a folder (loose files)
+  // When viewing a specific folder, show all files in that folder
+  const displayMedia = !selectedFolderId
+    ? regularMedia.filter((m) => !m.folder_id)
     : regularMedia;
 
   return (
