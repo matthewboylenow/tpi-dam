@@ -44,19 +44,26 @@ export function DashboardClient({ user }: Props) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const fetchFolders = useCallback(async () => {
+    console.log("[Dashboard] Fetching folders...");
     try {
       const response = await fetch("/api/folders");
+      console.log("[Dashboard] Folders response status:", response.status);
       const data = await response.json();
+      console.log("[Dashboard] Folders data:", data);
 
       if (data.success) {
+        console.log("[Dashboard] Setting folders:", data.folders.length);
         setFolders(data.folders);
+      } else {
+        console.error("[Dashboard] Folders fetch failed:", data);
       }
     } catch (error) {
-      console.error("Failed to fetch folders:", error);
+      console.error("[Dashboard] Failed to fetch folders:", error);
     }
   }, []);
 
   const fetchMedia = useCallback(async () => {
+    console.log("[Dashboard] Fetching media...");
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -70,13 +77,18 @@ export function DashboardClient({ user }: Props) {
       });
 
       const response = await fetch(`/api/media?${params}`);
+      console.log("[Dashboard] Media response status:", response.status);
       const data = await response.json();
+      console.log("[Dashboard] Media data:", data);
 
       if (data.success) {
+        console.log("[Dashboard] Setting media:", data.media.length, "items");
         setMedia(data.media);
+      } else {
+        console.error("[Dashboard] Media fetch failed:", data);
       }
     } catch (error) {
-      console.error("Failed to fetch media:", error);
+      console.error("[Dashboard] Failed to fetch media:", error);
     } finally {
       setIsLoading(false);
     }

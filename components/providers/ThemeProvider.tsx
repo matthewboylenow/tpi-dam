@@ -10,13 +10,18 @@ type ThemeContextType = {
   setTheme: (theme: Theme) => void;
 };
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  theme: "light",
+  toggleTheme: () => {},
+  setTheme: () => {},
+});
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log("[ThemeProvider] Mounting...");
     setMounted(true);
     const stored = localStorage.getItem("theme") as Theme | null;
     const prefersDark = window.matchMedia(
@@ -24,11 +29,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     ).matches;
 
     const initialTheme = stored || (prefersDark ? "dark" : "light");
+    console.log("[ThemeProvider] Initial theme:", initialTheme);
     setThemeState(initialTheme);
     document.documentElement.classList.toggle("dark", initialTheme === "dark");
   }, []);
 
   const setTheme = (newTheme: Theme) => {
+    console.log("[ThemeProvider] Setting theme to:", newTheme);
     setThemeState(newTheme);
     localStorage.setItem("theme", newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
@@ -37,10 +44,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
-
-  if (!mounted) {
-    return <>{children}</>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
@@ -51,8 +54,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
   return context;
 }
