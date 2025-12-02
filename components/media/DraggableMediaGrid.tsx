@@ -21,6 +21,7 @@ type Props = {
   isSelectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
+  onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
 };
 
 export function DraggableMediaGrid({
@@ -31,6 +32,7 @@ export function DraggableMediaGrid({
   isSelectable = false,
   selectedIds = new Set(),
   onSelect,
+  onContextMenu,
 }: Props) {
   const [activeMedia, setActiveMedia] = useState<MediaAssetFull | null>(null);
 
@@ -82,6 +84,7 @@ export function DraggableMediaGrid({
             isSelectable={isSelectable}
             isSelected={selectedIds.has(item.id)}
             onSelect={onSelect}
+            onContextMenu={onContextMenu}
           />
         ))}
       </div>
@@ -101,6 +104,7 @@ export function DraggableMediaGrid({
             key={item.id}
             media={item}
             onClick={() => onMediaClick(item)}
+            onContextMenu={onContextMenu}
           />
         ))}
       </div>
@@ -122,9 +126,11 @@ import { useDraggable } from "@dnd-kit/core";
 function DraggableMediaCard({
   media,
   onClick,
+  onContextMenu,
 }: {
   media: MediaAssetFull;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: media.id,
@@ -140,7 +146,7 @@ function DraggableMediaCard({
         cursor: isDragging ? "grabbing" : "grab",
       }}
     >
-      <MediaCard media={media} onClick={onClick} />
+      <MediaCard media={media} onClick={onClick} onContextMenu={onContextMenu} />
     </div>
   );
 }

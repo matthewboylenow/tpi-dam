@@ -6,12 +6,30 @@ type Props = {
 };
 
 export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
-  const totalSizeGB = totalSizeBytes / 1024 / 1024 / 1024;
-  const totalSizeMB = totalSizeBytes / 1024 / 1024;
-  const averageSizeMB = totalFiles > 0 ? totalSizeMB / totalFiles : 0;
+  // Validate and sanitize inputs
+  const safeTotal = Number.isFinite(totalSizeBytes) && totalSizeBytes >= 0 ? totalSizeBytes : 0;
+  const safeFiles = Number.isFinite(totalFiles) && totalFiles >= 0 ? totalFiles : 0;
+
+  const totalSizeGB = safeTotal / 1024 / 1024 / 1024;
+  const totalSizeMB = safeTotal / 1024 / 1024;
+  const averageSizeMB = safeFiles > 0 ? totalSizeMB / safeFiles : 0;
 
   // Estimate monthly storage cost (Vercel Blob: ~$0.15/GB/month)
   const estimatedMonthlyCost = totalSizeGB * 0.15;
+
+  // Format numbers safely
+  function formatSize(sizeGB: number, sizeMB: number): string {
+    if (!Number.isFinite(sizeGB) || !Number.isFinite(sizeMB)) return "0 MB";
+    if (sizeGB >= 1) {
+      return `${sizeGB.toFixed(2)} GB`;
+    }
+    return `${Math.round(sizeMB)} MB`;
+  }
+
+  function formatNumber(num: number, decimals: number = 1): string {
+    if (!Number.isFinite(num)) return "0";
+    return num.toFixed(decimals);
+  }
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
@@ -39,7 +57,7 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
             Total Files
           </p>
           <p className="text-2xl font-bold text-slate-900 mt-1">
-            {totalFiles.toLocaleString()}
+            {safeFiles.toLocaleString()}
           </p>
         </div>
 
@@ -49,9 +67,7 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
             Total Size
           </p>
           <p className="text-2xl font-bold text-slate-900 mt-1">
-            {totalSizeGB >= 1
-              ? `${totalSizeGB.toFixed(2)} GB`
-              : `${totalSizeMB.toFixed(0)} MB`}
+            {formatSize(totalSizeGB, totalSizeMB)}
           </p>
         </div>
 
@@ -61,7 +77,7 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
             Avg File Size
           </p>
           <p className="text-2xl font-bold text-slate-900 mt-1">
-            {averageSizeMB.toFixed(1)} MB
+            {formatNumber(averageSizeMB, 1)} MB
           </p>
         </div>
 
@@ -71,7 +87,7 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
             Est. Monthly Cost
           </p>
           <p className="text-2xl font-bold text-green-600 mt-1">
-            ${estimatedMonthlyCost.toFixed(2)}
+            ${formatNumber(estimatedMonthlyCost, 2)}
           </p>
         </div>
       </div>
@@ -85,19 +101,19 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
       </div>
 
       {/* Warnings */}
-      {totalSizeGB > 10 && (
+      {Number.isFinite(totalSizeGB) && totalSizeGB > 10 && (
         <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-800">
-            ⚠️ You&apos;re using {totalSizeGB.toFixed(1)} GB of storage. Consider
+            ⚠️ You&apos;re using {formatNumber(totalSizeGB, 1)} GB of storage. Consider
             asking users to record at 1080p to reduce file sizes.
           </p>
         </div>
       )}
 
-      {averageSizeMB > 100 && (
+      {Number.isFinite(averageSizeMB) && averageSizeMB > 100 && (
         <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-800">
-            ⚠️ Average file size is {averageSizeMB.toFixed(0)} MB. This suggests
+            ⚠️ Average file size is {formatNumber(averageSizeMB, 0)} MB. This suggests
             users may be uploading 4K videos or large images.
           </p>
         </div>

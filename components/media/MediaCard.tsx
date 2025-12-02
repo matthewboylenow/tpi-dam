@@ -11,9 +11,10 @@ type Props = {
   isSelectable?: boolean;
   isSelected?: boolean;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
+  onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
 };
 
-export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect }: Props) {
+export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect, onContextMenu }: Props) {
   const isVideo = media.mime_type?.startsWith("video/");
 
   function handleCheckboxClick(e: React.MouseEvent) {
@@ -31,10 +32,18 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
     }
   }
 
+  function handleContextMenu(e: React.MouseEvent) {
+    if (onContextMenu) {
+      e.preventDefault();
+      onContextMenu(e, media);
+    }
+  }
+
   return (
     <button
       type="button"
       onClick={handleCardClick}
+      onContextMenu={handleContextMenu}
       className={clsx(
         "group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all",
         "border text-left w-full",

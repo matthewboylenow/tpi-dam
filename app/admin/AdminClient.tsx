@@ -14,6 +14,8 @@ import { InvitationForm } from "@/components/admin/InvitationForm";
 import { InvitationList } from "@/components/admin/InvitationList";
 import { StorageStats } from "@/components/admin/StorageStats";
 import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
+import { FolderCard } from "@/components/folders/FolderCard";
+import { ContextMenu } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { MediaAssetFull } from "@/types/media";
 import { InvitationWithInviter } from "@/types/invitation";
@@ -43,6 +45,14 @@ export function AdminClient({ user }: Props) {
   // Multi-select
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
+
+  // Context menu
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    media?: MediaAssetFull;
+    folder?: FolderWithCount;
+  } | null>(null);
 
   // Filters and Sorting
   const [search, setSearch] = useState("");
@@ -123,6 +133,11 @@ export function AdminClient({ user }: Props) {
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
+  // When viewing "All Media", only show files without a folder
+  const displayMedia = !selectedFolderId
+    ? regularMedia.filter((m) => !m.folder_id)
+    : regularMedia;
+
   async function handleMediaMove(mediaId: string, folderId: string | null) {
     try {
       const response = await fetch(`/api/media/${mediaId}/move`, {
@@ -170,6 +185,175 @@ export function AdminClient({ user }: Props) {
 
     // Clear selection and exit selection mode
     handleClearSelection();
+  }
+
+  function handleMediaContextMenu(e: React.MouseEvent, media: MediaAssetFull) {
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      media,
+    });
+  }
+
+  function handleFolderContextMenu(e: React.MouseEvent, folder: FolderWithCount) {
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      folder,
+    });
+  }
+
+  async function handleDeleteMedia(mediaId: string) {
+    if (!confirm("Are you sure you want to delete this media? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/media/${mediaId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchMedia();
+        await fetchFolders();
+      } else {
+        alert("Failed to delete media");
+      }
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      alert("Failed to delete media");
+    }
+  }
+
+  async function handleDeleteFolder(folderId: string) {
+    if (!confirm("Are you sure you want to delete this folder? Media in this folder will not be deleted, just moved to 'All Media'.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/folders/${folderId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchFolders();
+        await fetchMedia();
+        if (selectedFolderId === folderId) {
+          setSelectedFolderId(null);
+        }
+      } else {
+        alert("Failed to delete folder");
+      }
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      alert("Failed to delete folder");
+    }
+  }
+
+  function getContextMenuItems() {
+    if (!contextMenu) return [];
+
+    if (contextMenu.media) {
+      const media = contextMenu.media;
+      return [
+        {
+          label: "View Details",
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          ),
+          onClick: () => setSelectedMedia(media),
+        },
+        {
+          label: "Download",
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          ),
+          onClick: () => {
+            window.open(media.blob_url, "_blank");
+          },
+        },
+        {
+          label: media.is_starred ? "Unstar" : "Star",
+          icon: (
+            <svg fill={media.is_starred ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          ),
+          onClick: async () => {
+            const response = await fetch(`/api/media/${media.id}/star`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ is_starred: !media.is_starred }),
+            });
+            if (response.ok) {
+              await fetchMedia();
+            }
+          },
+        },
+        {
+          label: "Move to Folder",
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          ),
+          onClick: () => {
+            // This will be handled by showing a submenu in a future enhancement
+            alert("Use drag-and-drop or bulk select to move files to folders");
+          },
+        },
+        {
+          divider: true,
+          label: "",
+          onClick: () => {},
+        },
+        {
+          label: "Delete",
+          danger: true,
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          ),
+          onClick: () => handleDeleteMedia(media.id),
+        },
+      ];
+    } else if (contextMenu.folder) {
+      const folder = contextMenu.folder;
+      return [
+        {
+          label: "Open Folder",
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          ),
+          onClick: () => setSelectedFolderId(folder.id),
+        },
+        {
+          divider: true,
+          label: "",
+          onClick: () => {},
+        },
+        {
+          label: "Delete Folder",
+          danger: true,
+          icon: (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          ),
+          onClick: () => handleDeleteFolder(folder.id),
+        },
+      ];
+    }
+
+    return [];
   }
 
   return (
@@ -333,21 +517,88 @@ export function AdminClient({ user }: Props) {
                         isSelectable={isSelectionMode}
                         selectedIds={selectedMediaIds}
                         onSelect={handleSelect}
+                        onContextMenu={handleMediaContextMenu}
                       />
                       <div className="mt-6 border-t border-slate-200"></div>
                     </div>
                   )}
 
-                  {/* Regular Media Grid */}
-                  <DraggableMediaGrid
-                    media={regularMedia}
-                    onMediaClick={setSelectedMedia}
-                    onMediaMove={handleMediaMove}
-                    isAdmin={true}
-                    isSelectable={isSelectionMode}
-                    selectedIds={selectedMediaIds}
-                    onSelect={handleSelect}
-                  />
+                  {/* Folders Section (show when viewing "All Media") */}
+                  {!selectedFolderId && folders.length > 0 && (
+                    <div className="mb-8">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="bg-blue-500 rounded-full p-2">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                            />
+                          </svg>
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">Folders</h2>
+                        <span className="text-sm text-slate-500">
+                          ({folders.length})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {folders.map((folder) => (
+                          <FolderCard
+                            key={folder.id}
+                            folder={folder}
+                            onClick={() => setSelectedFolderId(folder.id)}
+                            onContextMenu={handleFolderContextMenu}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-6 border-t border-slate-200"></div>
+                    </div>
+                  )}
+
+                  {/* Files Section */}
+                  {displayMedia.length > 0 && (
+                    <div>
+                      {!selectedFolderId && (
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="bg-slate-500 rounded-full p-2">
+                            <svg
+                              className="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-900">Files</h2>
+                          <span className="text-sm text-slate-500">
+                            ({displayMedia.length} not in folders)
+                          </span>
+                        </div>
+                      )}
+                      <DraggableMediaGrid
+                        media={displayMedia}
+                        onMediaClick={setSelectedMedia}
+                        onMediaMove={handleMediaMove}
+                        isAdmin={true}
+                        isSelectable={isSelectionMode}
+                        selectedIds={selectedMediaIds}
+                        onSelect={handleSelect}
+                        onContextMenu={handleMediaContextMenu}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -477,6 +728,16 @@ export function AdminClient({ user }: Props) {
         folders={folders}
         isAdmin={true}
       />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems()}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
       </DndContext>
     </Shell>
   );
