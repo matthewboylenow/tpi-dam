@@ -2,6 +2,15 @@
 
 import { FolderWithCount } from "@/types/folder";
 import { clsx } from "clsx";
+import { CardMenu } from "@/components/ui/CardMenu";
+
+type MenuItem = {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  divider?: boolean;
+};
 
 type Props = {
   folder: FolderWithCount;
@@ -10,6 +19,7 @@ type Props = {
   isSelected?: boolean;
   onSelect?: (folderId: string, isSelected: boolean) => void;
   onContextMenu?: (e: React.MouseEvent, folder: FolderWithCount) => void;
+  menuItems?: MenuItem[];
 };
 
 export function FolderCard({
@@ -19,6 +29,7 @@ export function FolderCard({
   isSelected = false,
   onSelect,
   onContextMenu,
+  menuItems = [],
 }: Props) {
   function handleCheckboxClick(e: React.MouseEvent) {
     e.stopPropagation();
@@ -56,6 +67,13 @@ export function FolderCard({
       )}
     >
       <div className="relative aspect-video w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center">
+        {/* Three-dot Menu */}
+        {menuItems.length > 0 && (
+          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <CardMenu items={menuItems} />
+          </div>
+        )}
+
         {/* Selection Checkbox */}
         {isSelectable && (
           <div
