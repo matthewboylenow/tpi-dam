@@ -48,14 +48,14 @@ export function FolderCard({
       onClick={handleCardClick}
       onContextMenu={handleContextMenu}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all",
+        "group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
         "border text-left w-full",
         isSelected
           ? "border-brand-primary ring-2 ring-brand-primary/50"
-          : "border-slate-200"
+          : "border-slate-200 dark:border-slate-700"
       )}
     >
-      <div className="relative aspect-video w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="relative aspect-video w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center">
         {/* Selection Checkbox */}
         {isSelectable && (
           <div
@@ -118,17 +118,17 @@ export function FolderCard({
         </svg>
 
         {/* Media Count Badge */}
-        <div className="absolute bottom-2 right-2 bg-white/90 rounded-full px-2 py-1 text-xs font-semibold text-slate-700">
+        <div className="absolute bottom-2 right-2 bg-white/90 dark:bg-slate-800/90 rounded-full px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
           {folder.media_count} {folder.media_count === 1 ? "item" : "items"}
         </div>
       </div>
 
       <div className="flex flex-col gap-2 p-3">
-        <p className="font-semibold text-sm text-slate-900 truncate">
+        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
           {folder.name}
         </p>
         {folder.description && (
-          <p className="text-xs text-slate-500 line-clamp-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
             {folder.description}
           </p>
         )}

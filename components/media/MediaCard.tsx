@@ -45,12 +45,12 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
       onClick={handleCardClick}
       onContextMenu={handleContextMenu}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all",
+        "group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
         "border text-left w-full",
-        isSelected ? "border-brand-primary ring-2 ring-brand-primary/50" : "border-slate-200"
+        isSelected ? "border-brand-primary ring-2 ring-brand-primary/50" : "border-slate-200 dark:border-slate-700"
       )}
     >
-      <div className="relative aspect-video w-full bg-slate-100">
+      <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-700">
         {/* Selection Checkbox */}
         {isSelectable && (
           <div
@@ -98,7 +98,7 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
 
         {isVideo ? (
           <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-slate-500">
+            <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
               <svg
                 className="w-12 h-12"
                 fill="none"
@@ -139,7 +139,7 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
             {media.client_name}
           </p>
         )}
-        <p className="line-clamp-2 text-sm text-slate-800">
+        <p className="line-clamp-2 text-sm text-slate-800 dark:text-slate-200">
           {media.caption || "No caption"}
         </p>
         {media.tags && media.tags.length > 0 && (
@@ -154,7 +154,7 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
             )}
           </div>
         )}
-        <p className="mt-1 text-[11px] text-slate-400">
+        <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
           {new Date(media.created_at).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",

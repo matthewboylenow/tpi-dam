@@ -121,9 +121,10 @@ export function DashboardClient({ user }: Props) {
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
-  // When viewing "All Media", only show files without a folder
-  const displayMedia = !selectedFolderId
-    ? regularMedia.filter((m) => !m.folder_id)
+  // When viewing a specific folder, show only files in that folder
+  // When viewing "All Media", show ALL files
+  const displayMedia = selectedFolderId
+    ? regularMedia.filter((m) => m.folder_id === selectedFolderId)
     : regularMedia;
 
   return (
@@ -143,10 +144,10 @@ export function DashboardClient({ user }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                 My Media Library
               </h1>
-              <p className="text-slate-600 mt-1">
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
                 Manage your photos and videos
               </p>
             </div>
@@ -218,7 +219,7 @@ export function DashboardClient({ user }: Props) {
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
-                <p className="mt-4 text-slate-600">Loading media...</p>
+                <p className="mt-4 text-slate-600 dark:text-slate-400">Loading media...</p>
               </div>
             </div>
           ) : (
@@ -251,8 +252,8 @@ export function DashboardClient({ user }: Props) {
                         />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900">Folders</h2>
-                    <span className="text-sm text-slate-500">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Folders</h2>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
                       ({folders.length})
                     </span>
                   </div>
@@ -265,7 +266,7 @@ export function DashboardClient({ user }: Props) {
                       />
                     ))}
                   </div>
-                  <div className="mt-6 border-t border-slate-200"></div>
+                  <div className="mt-6 border-t border-slate-200 dark:border-slate-700"></div>
                 </div>
               )}
 
@@ -289,9 +290,9 @@ export function DashboardClient({ user }: Props) {
                           />
                         </svg>
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900">Files</h2>
-                      <span className="text-sm text-slate-500">
-                        ({displayMedia.length} not in folders)
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">Files</h2>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        ({displayMedia.length})
                       </span>
                     </div>
                   )}
@@ -308,14 +309,14 @@ export function DashboardClient({ user }: Props) {
               {/* Show selection count when in selection mode */}
               {isSelectionMode && selectedMediaIds.size > 0 && (
                 <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 flex items-center gap-4 min-w-[300px]">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-4 min-w-[300px]">
                     <div className="flex items-center gap-2">
                       <div className="bg-brand-primary rounded-full w-8 h-8 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {selectedMediaIds.size}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-slate-900">
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
                         {selectedMediaIds.size} selected
                       </span>
                     </div>

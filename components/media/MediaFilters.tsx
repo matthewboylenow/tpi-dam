@@ -20,7 +20,7 @@ export function MediaFilters({
   onTagChange,
 }: Props) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
           placeholder="Search captions and clients..."

@@ -10,8 +10,8 @@ type Props = {
 
 export function FolderList({ folders, selectedFolderId, onSelectFolder }: Props) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Folders</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Folders</h2>
 
       <div className="space-y-1">
         {/* All Media Option */}
@@ -20,7 +20,7 @@ export function FolderList({ folders, selectedFolderId, onSelectFolder }: Props)
           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
             selectedFolderId === null
               ? "bg-brand-primary text-white"
-              : "hover:bg-slate-100 text-slate-700"
+              : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -49,7 +49,7 @@ export function FolderList({ folders, selectedFolderId, onSelectFolder }: Props)
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
               selectedFolderId === folder.id
                 ? "bg-brand-primary text-white"
-                : "hover:bg-slate-100 text-slate-700"
+                : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
             }`}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -76,7 +76,7 @@ export function FolderList({ folders, selectedFolderId, onSelectFolder }: Props)
       </div>
 
       {folders.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
           No folders yet
         </p>
       )}
