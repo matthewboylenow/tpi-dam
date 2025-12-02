@@ -46,10 +46,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4">
       <Card className="w-full max-w-md p-8" variant="elevated">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             Welcome Back
           </h1>
-          <p className="text-slate-600">Sign in to Taylor Products DAM</p>
+          <p className="text-slate-600 dark:text-slate-300">Sign in to Taylor Products DAM</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,8 +75,8 @@ export default function LoginPage() {
           />
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
 
@@ -91,11 +91,11 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-600">
+        <div className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
           Need an account?{" "}
           <Link
             href="/register"
-            className="text-brand-primary-light hover:text-brand-primary font-semibold"
+            className="text-brand-primary-light hover:text-brand-primary dark:text-brand-accent dark:hover:text-teal-400 font-semibold"
           >
             Register here
           </Link>
