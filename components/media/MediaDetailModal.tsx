@@ -92,11 +92,11 @@ export function MediaDetailModal({ media, onClose, userRole, onStarToggle }: Pro
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Media Preview */}
@@ -105,18 +105,18 @@ export function MediaDetailModal({ media, onClose, userRole, onStarToggle }: Pro
             <video
               src={media.blob_url}
               controls
-              className="w-full max-h-[60vh] object-contain"
+              className="w-full max-h-[45vh] object-contain"
             >
               Your browser does not support the video tag.
             </video>
           ) : (
-            <div className="relative w-full" style={{ maxHeight: "60vh" }}>
+            <div className="relative w-full" style={{ maxHeight: "45vh" }}>
               <Image
                 src={media.blob_url}
                 alt={media.caption || "Media asset"}
-                width={1200}
-                height={800}
-                className="w-full h-auto max-h-[60vh] object-contain"
+                width={800}
+                height={600}
+                className="w-full h-auto max-h-[45vh] object-contain"
                 unoptimized
               />
             </div>
@@ -124,16 +124,16 @@ export function MediaDetailModal({ media, onClose, userRole, onStarToggle }: Pro
         </div>
 
         {/* Media Info */}
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {media.client_name && (
-                <p className="text-sm font-semibold uppercase tracking-wide text-brand-accent mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-accent mb-1">
                   {media.client_name}
                 </p>
               )}
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 {media.caption || "Untitled"}
               </h2>
             </div>
@@ -195,7 +195,7 @@ export function MediaDetailModal({ media, onClose, userRole, onStarToggle }: Pro
           )}
 
           {/* Metadata */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
             <div>
               <p className="text-xs font-medium text-slate-500 mb-1">
                 UPLOADED BY
@@ -237,7 +237,7 @@ export function MediaDetailModal({ media, onClose, userRole, onStarToggle }: Pro
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-3">
             {isAdmin && isImage && (
               <Button
                 variant="primary"

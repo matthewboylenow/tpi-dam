@@ -30,6 +30,10 @@ export function DashboardClient({ user }: Props) {
     null
   );
 
+  // Multi-select (for future features like bulk download)
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
+
   // Filters and Sorting
   const [search, setSearch] = useState("");
   const [clientName, setClientName] = useState("");
@@ -96,6 +100,23 @@ export function DashboardClient({ user }: Props) {
     fetchFolders();
   }
 
+  function handleSelect(mediaId: string, isSelected: boolean) {
+    setSelectedMediaIds((prev) => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(mediaId);
+      } else {
+        newSet.delete(mediaId);
+      }
+      return newSet;
+    });
+  }
+
+  function handleClearSelection() {
+    setSelectedMediaIds(new Set());
+    setIsSelectionMode(false);
+  }
+
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
@@ -152,11 +173,38 @@ export function DashboardClient({ user }: Props) {
                 onTagChange={setTag}
               />
             </div>
-            <SortControls
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSortChange={handleSortChange}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant={isSelectionMode ? "primary" : "secondary"}
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  if (isSelectionMode) {
+                    setSelectedMediaIds(new Set());
+                  }
+                }}
+              >
+                {isSelectionMode ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Select
+                  </>
+                )}
+              </Button>
+              <SortControls
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
+              />
+            </div>
           </div>
 
           {/* Media Content */}
@@ -173,10 +221,40 @@ export function DashboardClient({ user }: Props) {
               <StarredMediaSection
                 starredMedia={starredMedia}
                 onMediaClick={setSelectedMedia}
+                isSelectable={isSelectionMode}
+                selectedIds={selectedMediaIds}
+                onSelect={handleSelect}
               />
 
               {/* Regular Media Grid */}
-              <MediaGrid media={regularMedia} onMediaClick={setSelectedMedia} />
+              <MediaGrid
+                media={regularMedia}
+                onMediaClick={setSelectedMedia}
+                isSelectable={isSelectionMode}
+                selectedIds={selectedMediaIds}
+                onSelect={handleSelect}
+              />
+
+              {/* Show selection count when in selection mode */}
+              {isSelectionMode && selectedMediaIds.size > 0 && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 flex items-center gap-4 min-w-[300px]">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-brand-primary rounded-full w-8 h-8 flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">
+                          {selectedMediaIds.size}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-slate-900">
+                        {selectedMediaIds.size} selected
+                      </span>
+                    </div>
+                    <Button variant="secondary" onClick={handleClearSelection}>
+                      Clear Selection
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

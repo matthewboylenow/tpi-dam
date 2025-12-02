@@ -18,6 +18,9 @@ type Props = {
   onMediaClick: (media: MediaAssetFull) => void;
   onMediaMove?: (mediaId: string, folderId: string | null) => Promise<void>;
   isAdmin?: boolean;
+  isSelectable?: boolean;
+  selectedIds?: Set<string>;
+  onSelect?: (mediaId: string, isSelected: boolean) => void;
 };
 
 export function DraggableMediaGrid({
@@ -25,6 +28,9 @@ export function DraggableMediaGrid({
   onMediaClick,
   onMediaMove,
   isAdmin = false,
+  isSelectable = false,
+  selectedIds = new Set(),
+  onSelect,
 }: Props) {
   const [activeMedia, setActiveMedia] = useState<MediaAssetFull | null>(null);
 
@@ -64,12 +70,19 @@ export function DraggableMediaGrid({
     setActiveMedia(null);
   }
 
-  // If not admin or no move handler, just show regular grid
-  if (!isAdmin || !onMediaMove) {
+  // If not admin or no move handler, or if in selection mode, just show regular grid
+  if (!isAdmin || !onMediaMove || isSelectable) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {media.map((item) => (
-          <MediaCard key={item.id} media={item} onClick={() => onMediaClick(item)} />
+          <MediaCard
+            key={item.id}
+            media={item}
+            onClick={() => onMediaClick(item)}
+            isSelectable={isSelectable}
+            isSelected={selectedIds.has(item.id)}
+            onSelect={onSelect}
+          />
         ))}
       </div>
     );

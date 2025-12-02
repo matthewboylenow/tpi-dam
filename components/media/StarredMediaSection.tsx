@@ -6,9 +6,12 @@ import { MediaCard } from "./MediaCard";
 type Props = {
   starredMedia: MediaAssetFull[];
   onMediaClick: (media: MediaAssetFull) => void;
+  isSelectable?: boolean;
+  selectedIds?: Set<string>;
+  onSelect?: (mediaId: string, isSelected: boolean) => void;
 };
 
-export function StarredMediaSection({ starredMedia, onMediaClick }: Props) {
+export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect }: Props) {
   if (starredMedia.length === 0) return null;
 
   return (
@@ -34,6 +37,9 @@ export function StarredMediaSection({ starredMedia, onMediaClick }: Props) {
             key={media.id}
             media={media}
             onClick={() => onMediaClick(media)}
+            isSelectable={isSelectable}
+            isSelected={selectedIds.has(media.id)}
+            onSelect={onSelect}
           />
         ))}
       </div>

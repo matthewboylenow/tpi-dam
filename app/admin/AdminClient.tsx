@@ -13,6 +13,7 @@ import { DndContext } from "@dnd-kit/core";
 import { InvitationForm } from "@/components/admin/InvitationForm";
 import { InvitationList } from "@/components/admin/InvitationList";
 import { StorageStats } from "@/components/admin/StorageStats";
+import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
 import { Button } from "@/components/ui/Button";
 import { MediaAssetFull } from "@/types/media";
 import { InvitationWithInviter } from "@/types/invitation";
@@ -38,6 +39,10 @@ export function AdminClient({ user }: Props) {
     null
   );
   const [showFolderModal, setShowFolderModal] = useState(false);
+
+  // Multi-select
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
 
   // Filters and Sorting
   const [search, setSearch] = useState("");
@@ -138,6 +143,35 @@ export function AdminClient({ user }: Props) {
     }
   }
 
+  function handleSelect(mediaId: string, isSelected: boolean) {
+    setSelectedMediaIds((prev) => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(mediaId);
+      } else {
+        newSet.delete(mediaId);
+      }
+      return newSet;
+    });
+  }
+
+  function handleClearSelection() {
+    setSelectedMediaIds(new Set());
+    setIsSelectionMode(false);
+  }
+
+  async function handleBulkMoveToFolder(folderId: string | null) {
+    const mediaIds = Array.from(selectedMediaIds);
+
+    // Move all selected media
+    await Promise.all(
+      mediaIds.map((mediaId) => handleMediaMove(mediaId, folderId))
+    );
+
+    // Clear selection and exit selection mode
+    handleClearSelection();
+  }
+
   return (
     <Shell user={user}>
       <DndContext>
@@ -212,11 +246,38 @@ export function AdminClient({ user }: Props) {
                     onTagChange={setTag}
                   />
                 </div>
-                <SortControls
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  onSortChange={handleSortChange}
-                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={isSelectionMode ? "primary" : "secondary"}
+                    onClick={() => {
+                      setIsSelectionMode(!isSelectionMode);
+                      if (isSelectionMode) {
+                        setSelectedMediaIds(new Set());
+                      }
+                    }}
+                  >
+                    {isSelectionMode ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Select
+                      </>
+                    )}
+                  </Button>
+                  <SortControls
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={handleSortChange}
+                  />
+                </div>
               </div>
 
               {/* Stats */}
@@ -269,6 +330,9 @@ export function AdminClient({ user }: Props) {
                         onMediaClick={setSelectedMedia}
                         onMediaMove={handleMediaMove}
                         isAdmin={true}
+                        isSelectable={isSelectionMode}
+                        selectedIds={selectedMediaIds}
+                        onSelect={handleSelect}
                       />
                       <div className="mt-6 border-t border-slate-200"></div>
                     </div>
@@ -280,6 +344,9 @@ export function AdminClient({ user }: Props) {
                     onMediaClick={setSelectedMedia}
                     onMediaMove={handleMediaMove}
                     isAdmin={true}
+                    isSelectable={isSelectionMode}
+                    selectedIds={selectedMediaIds}
+                    onSelect={handleSelect}
                   />
                 </>
               )}
@@ -400,6 +467,15 @@ export function AdminClient({ user }: Props) {
           setShowFolderModal(false);
           fetchFolders();
         }}
+      />
+
+      {/* Bulk Action Toolbar */}
+      <BulkActionToolbar
+        selectedCount={selectedMediaIds.size}
+        onClearSelection={handleClearSelection}
+        onMoveToFolder={handleBulkMoveToFolder}
+        folders={folders}
+        isAdmin={true}
       />
       </DndContext>
     </Shell>

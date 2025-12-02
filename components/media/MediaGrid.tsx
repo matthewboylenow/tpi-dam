@@ -6,9 +6,12 @@ import { MediaCard } from "./MediaCard";
 type Props = {
   media: MediaAssetFull[];
   onMediaClick: (media: MediaAssetFull) => void;
+  isSelectable?: boolean;
+  selectedIds?: Set<string>;
+  onSelect?: (mediaId: string, isSelected: boolean) => void;
 };
 
-export function MediaGrid({ media, onMediaClick }: Props) {
+export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect }: Props) {
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -42,6 +45,9 @@ export function MediaGrid({ media, onMediaClick }: Props) {
           key={item.id}
           media={item}
           onClick={() => onMediaClick(item)}
+          isSelectable={isSelectable}
+          isSelected={selectedIds.has(item.id)}
+          onSelect={onSelect}
         />
       ))}
     </div>

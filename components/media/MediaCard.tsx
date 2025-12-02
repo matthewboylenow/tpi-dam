@@ -8,21 +8,73 @@ import { Badge } from "@/components/ui/Badge";
 type Props = {
   media: MediaAssetFull;
   onClick?: () => void;
+  isSelectable?: boolean;
+  isSelected?: boolean;
+  onSelect?: (mediaId: string, isSelected: boolean) => void;
 };
 
-export function MediaCard({ media, onClick }: Props) {
+export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect }: Props) {
   const isVideo = media.mime_type?.startsWith("video/");
+
+  function handleCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (onSelect) {
+      onSelect(media.id, !isSelected);
+    }
+  }
+
+  function handleCardClick() {
+    if (isSelectable && onSelect) {
+      onSelect(media.id, !isSelected);
+    } else if (onClick) {
+      onClick();
+    }
+  }
 
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handleCardClick}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow",
-        "border border-slate-200 text-left w-full"
+        "group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all",
+        "border text-left w-full",
+        isSelected ? "border-brand-primary ring-2 ring-brand-primary/50" : "border-slate-200"
       )}
     >
       <div className="relative aspect-video w-full bg-slate-100">
+        {/* Selection Checkbox */}
+        {isSelectable && (
+          <div
+            className="absolute top-2 left-2 z-20"
+            onClick={handleCheckboxClick}
+          >
+            <div
+              className={clsx(
+                "w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer",
+                isSelected
+                  ? "bg-brand-primary border-brand-primary"
+                  : "bg-white/90 border-slate-300 hover:border-brand-primary"
+              )}
+            >
+              {isSelected && (
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Star Icon */}
         {media.is_starred && (
           <div className="absolute top-2 right-2 bg-yellow-400 rounded-full p-1.5 shadow-lg z-10">
