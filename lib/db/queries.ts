@@ -7,6 +7,17 @@ import type {
   CreateMediaAssetInput,
   MediaFilterParams,
 } from "@/types/media";
+import type {
+  Folder,
+  FolderWithCount,
+  CreateFolderInput,
+  UpdateFolderInput,
+} from "@/types/folder";
+import type {
+  Invitation,
+  InvitationWithInviter,
+  CreateInvitationInput,
+} from "@/types/invitation";
 
 // ============================================================================
 // User Queries
@@ -62,15 +73,16 @@ export async function createMediaAsset(
     client_name = null,
     mime_type = null,
     file_size = null,
+    folder_id = null,
   } = input;
 
   const result = await sql`
     INSERT INTO media_assets (
-      owner_user_id, blob_url, caption, client_name, mime_type, file_size
+      owner_user_id, blob_url, caption, client_name, mime_type, file_size, folder_id
     )
     VALUES (
       ${owner_user_id}, ${blob_url}, ${caption}, ${client_name},
-      ${mime_type}, ${file_size}
+      ${mime_type}, ${file_size}, ${folder_id}
     )
     RETURNING *
   `;
@@ -111,6 +123,10 @@ export async function getMediaAssets(
     search,
     from,
     to,
+    folder_id,
+    starred_only,
+    sort_by = "created_at",
+    sort_order = "desc",
     limit = 50,
     offset = 0,
   } = params;
@@ -148,6 +164,15 @@ export async function getMediaAssets(
     values.push(to);
   }
 
+  if (folder_id) {
+    conditions.push(`m.folder_id = $${valueIndex++}`);
+    values.push(folder_id);
+  }
+
+  if (starred_only) {
+    conditions.push(`m.is_starred = true`);
+  }
+
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -160,6 +185,13 @@ export async function getMediaAssets(
     `;
     values.push(tag);
   }
+
+  // Build dynamic ORDER BY clause
+  const sortColumn =
+    sort_by === "file_size" ? "m.file_size" :
+    sort_by === "client_name" ? "m.client_name" :
+    "m.created_at";
+  const sortDir = sort_order === "asc" ? "ASC" : "DESC";
 
   values.push(limit, offset);
 
@@ -179,7 +211,7 @@ export async function getMediaAssets(
     ${tagJoin}
     ${whereClause}
     GROUP BY m.id, u.name, u.email
-    ORDER BY m.created_at DESC
+    ORDER BY m.is_starred DESC, ${sortColumn} ${sortDir}, m.created_at DESC
     LIMIT $${valueIndex++} OFFSET $${valueIndex++}
   `;
 
@@ -192,6 +224,21 @@ export async function deleteMediaAsset(id: string): Promise<void> {
     DELETE FROM media_assets
     WHERE id = ${id}
   `;
+}
+
+export async function updateMediaAsset(
+  id: string,
+  updates: { blob_url?: string; file_size?: number }
+): Promise<void> {
+  const { blob_url, file_size } = updates;
+
+  if (blob_url && file_size) {
+    await sql`
+      UPDATE media_assets
+      SET blob_url = ${blob_url}, file_size = ${file_size}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+  }
 }
 
 // ============================================================================
@@ -252,4 +299,167 @@ export async function getTagsForMedia(mediaId: string): Promise<string[]> {
   `;
 
   return result.rows.map((row) => row.name);
+}
+
+// ============================================================================
+// Folder Queries
+// ============================================================================
+
+export async function createFolder(
+  input: CreateFolderInput & { created_by: string }
+): Promise<Folder> {
+  const { name, description = null, created_by } = input;
+
+  const result = await sql`
+    INSERT INTO folders (name, description, created_by)
+    VALUES (${name}, ${description}, ${created_by})
+    RETURNING *
+  `;
+
+  return result.rows[0] as Folder;
+}
+
+export async function getFolders(): Promise<FolderWithCount[]> {
+  const result = await sql`
+    SELECT
+      f.*,
+      u.name as creator_name,
+      u.email as creator_email,
+      COUNT(m.id)::int as media_count
+    FROM folders f
+    LEFT JOIN users u ON f.created_by = u.id
+    LEFT JOIN media_assets m ON f.id = m.folder_id
+    GROUP BY f.id, u.name, u.email
+    ORDER BY f.name ASC
+  `;
+
+  return result.rows as FolderWithCount[];
+}
+
+export async function getFolderById(id: string): Promise<Folder | null> {
+  const result = await sql`
+    SELECT * FROM folders WHERE id = ${id} LIMIT 1
+  `;
+
+  return result.rows[0] as Folder | null;
+}
+
+export async function updateFolder(
+  id: string,
+  input: UpdateFolderInput
+): Promise<Folder> {
+  const { name, description } = input;
+
+  // Build dynamic SET clause
+  const updates: string[] = [];
+  const values: any[] = [];
+  let valueIndex = 1;
+
+  if (name !== undefined) {
+    updates.push(`name = $${valueIndex++}`);
+    values.push(name);
+  }
+
+  if (description !== undefined) {
+    updates.push(`description = $${valueIndex++}`);
+    values.push(description);
+  }
+
+  updates.push(`updated_at = NOW()`);
+  values.push(id);
+
+  const query = `
+    UPDATE folders
+    SET ${updates.join(", ")}
+    WHERE id = $${valueIndex}
+    RETURNING *
+  `;
+
+  const result = await sql.query(query, values);
+  return result.rows[0] as Folder;
+}
+
+export async function deleteFolder(id: string): Promise<void> {
+  await sql`
+    DELETE FROM folders WHERE id = ${id}
+  `;
+}
+
+// ============================================================================
+// Invitation Queries
+// ============================================================================
+
+export async function createInvitation(
+  input: CreateInvitationInput & { invited_by: string; token: string }
+): Promise<Invitation> {
+  const { email, token, role, invited_by, expires_at } = input;
+
+  const result = await sql`
+    INSERT INTO invitations (email, token, role, invited_by, expires_at)
+    VALUES (${email}, ${token}, ${role}, ${invited_by}, ${expires_at.toISOString()})
+    RETURNING *
+  `;
+
+  return result.rows[0] as Invitation;
+}
+
+export async function getInvitationByToken(
+  token: string
+): Promise<Invitation | null> {
+  const result = await sql`
+    SELECT * FROM invitations WHERE token = ${token} LIMIT 1
+  `;
+
+  return result.rows[0] as Invitation | null;
+}
+
+export async function getActiveInvitations(): Promise<InvitationWithInviter[]> {
+  const result = await sql`
+    SELECT
+      i.*,
+      u.name as inviter_name,
+      u.email as inviter_email
+    FROM invitations i
+    LEFT JOIN users u ON i.invited_by = u.id
+    WHERE i.used_at IS NULL AND i.expires_at > NOW()
+    ORDER BY i.created_at DESC
+  `;
+
+  return result.rows as InvitationWithInviter[];
+}
+
+export async function markInvitationUsed(token: string): Promise<void> {
+  await sql`
+    UPDATE invitations
+    SET used_at = NOW()
+    WHERE token = ${token}
+  `;
+}
+
+export async function deleteInvitation(id: string): Promise<void> {
+  await sql`
+    DELETE FROM invitations WHERE id = ${id}
+  `;
+}
+
+export async function cleanupExpiredInvitations(): Promise<void> {
+  await sql`
+    DELETE FROM invitations
+    WHERE expires_at < NOW() AND used_at IS NULL
+  `;
+}
+
+// ============================================================================
+// Starred Media Queries
+// ============================================================================
+
+export async function toggleMediaStarred(
+  mediaId: string,
+  isStarred: boolean
+): Promise<void> {
+  await sql`
+    UPDATE media_assets
+    SET is_starred = ${isStarred}
+    WHERE id = ${mediaId}
+  `;
 }

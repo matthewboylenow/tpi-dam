@@ -49,7 +49,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Welcome Back
           </h1>
-          <p className="text-slate-600">Sign in to Taylor Media Hub</p>
+          <p className="text-slate-600">Sign in to Taylor Products DAM</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Taylor Media Hub",
+  title: "Taylor Products Digital Asset Management",
   description: "Digital Asset Management for Taylor Products",
 };
 

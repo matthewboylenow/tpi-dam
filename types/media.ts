@@ -6,6 +6,8 @@ export interface MediaAsset {
   client_name: string | null;
   mime_type: string | null;
   file_size: number | null;
+  folder_id: string | null;
+  is_starred: boolean;
   created_at: Date;
 }
 
@@ -29,6 +31,7 @@ export type CreateMediaAssetInput = {
   client_name?: string;
   mime_type?: string;
   file_size?: number;
+  folder_id?: string | null;
 };
 
 export type MediaFilterParams = {
@@ -38,6 +41,10 @@ export type MediaFilterParams = {
   search?: string;
   from?: string;
   to?: string;
+  folder_id?: string;
+  starred_only?: boolean;
+  sort_by?: "created_at" | "file_size" | "client_name";
+  sort_order?: "asc" | "desc";
   limit?: number;
   offset?: number;
 };

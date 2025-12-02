@@ -1,28 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createUser, getUserByEmail } from "@/lib/db/queries";
-import { registerSchema } from "@/lib/validation/authSchemas";
+import {
+  createUser,
+  getUserByEmail,
+  getInvitationByToken,
+  markInvitationUsed,
+} from "@/lib/db/queries";
+import { acceptInvitationSchema } from "@/lib/validation/invitationSchemas";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
     // Validate input
-    const validation = registerSchema.safeParse(body);
+    const validation = acceptInvitationSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid input", details: validation.error.issues },
+        { error: validation.error.errors[0].message },
         { status: 400 }
       );
     }
 
-    const { name, email, password, registrationCode } = validation.data;
+    const { token, name, email, password } = validation.data;
 
-    // Check registration code if required
-    const requiredCode = process.env.REGISTRATION_CODE;
-    if (requiredCode && registrationCode !== requiredCode) {
+    // Validate invitation token (REQUIRED)
+    const invitation = await getInvitationByToken(token);
+    if (!invitation) {
       return NextResponse.json(
-        { error: "Invalid registration code" },
+        { error: "Invalid invitation token" },
+        { status: 403 }
+      );
+    }
+
+    // Check if invitation is expired
+    if (invitation.expires_at < new Date()) {
+      return NextResponse.json(
+        { error: "Invitation has expired" },
+        { status: 403 }
+      );
+    }
+
+    // Check if invitation has already been used
+    if (invitation.used_at) {
+      return NextResponse.json(
+        { error: "Invitation has already been used" },
+        { status: 403 }
+      );
+    }
+
+    // Verify email matches invitation
+    if (invitation.email !== email) {
+      return NextResponse.json(
+        { error: "Email does not match invitation" },
         { status: 403 }
       );
     }
@@ -39,13 +68,16 @@ export async function POST(req: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with role from invitation
     const user = await createUser({
       email,
       name,
       password: passwordHash,
-      role: "sales", // Default role
+      role: invitation.role,
     });
+
+    // Mark invitation as used
+    await markInvitationUsed(token);
 
     return NextResponse.json(
       {

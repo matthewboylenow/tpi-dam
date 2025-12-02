@@ -1,12 +1,12 @@
-# Taylor Media Hub
+# Taylor Products Digital Asset Management
 
-A Digital Asset Management (DAM) web application for Taylor Products salespeople to upload, manage, and share photos and videos with metadata.
+A Digital Asset Management (DAM) web application for Taylor Products to upload, manage, and share photos and videos with metadata.
 
 ---
 
 ## Overview
 
-**Taylor Media Hub** allows salespeople to:
+**Taylor Products DAM** allows users to:
 - Upload photos and videos with captions, client names, and tags
 - Manage their personal media library
 - Search and filter assets by date, client, and tags
@@ -93,7 +93,7 @@ Admins can:
 ## Project Structure
 
 ```
-taylor-media-hub/
+taylor-products-dam/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
 │   ├── dashboard/         # User dashboard

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getMediaAssetById, deleteMediaAsset } from "@/lib/db/queries";
+import { getMediaAssetById, deleteMediaAsset, updateMediaAsset } from "@/lib/db/queries";
 
 /**
  * GET /api/media/[id]
@@ -87,6 +87,49 @@ export async function DELETE(
     console.error("Delete media error:", error);
     return NextResponse.json(
       { error: "Failed to delete media" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/media/[id]
+ * Update a media asset (admin only - for editing images)
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin access required." },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { blob_url, file_size } = body;
+
+    if (!blob_url || !file_size) {
+      return NextResponse.json(
+        { error: "blob_url and file_size are required" },
+        { status: 400 }
+      );
+    }
+
+    await updateMediaAsset(params.id, { blob_url, file_size });
+
+    return NextResponse.json({
+      success: true,
+      message: "Media updated successfully",
+    });
+  } catch (error) {
+    console.error("Update media error:", error);
+    return NextResponse.json(
+      { error: "Failed to update media" },
       { status: 500 }
     );
   }
