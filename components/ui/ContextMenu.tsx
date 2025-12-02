@@ -67,13 +67,13 @@ export function ContextMenu({ x, y, items, onClose }: Props) {
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-white rounded-lg shadow-2xl border border-slate-200 py-2 min-w-[180px]"
+      className="fixed z-50 bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700 py-2 min-w-[180px]"
       style={{ left: x, top: y }}
     >
       {items.map((item, index) => (
         <div key={index}>
           {item.divider && (
-            <div className="h-px bg-slate-200 my-1" />
+            <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
           )}
           <button
             onClick={() => {
@@ -82,8 +82,8 @@ export function ContextMenu({ x, y, items, onClose }: Props) {
             }}
             className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
               item.danger
-                ? "text-red-600 hover:bg-red-50"
-                : "text-slate-900 hover:bg-slate-50"
+                ? "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                : "text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"
             }`}
           >
             {item.icon && <div className="w-4 h-4 flex-shrink-0">{item.icon}</div>}
