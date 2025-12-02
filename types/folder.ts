@@ -3,6 +3,7 @@ export interface Folder {
   name: string;
   description: string | null;
   created_by: string;
+  is_starred: boolean;
   created_at: Date;
   updated_at: Date;
 }

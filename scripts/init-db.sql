@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS folders (
   name TEXT NOT NULL,
   description TEXT,
   created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  is_starred BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -81,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets(folder_id);
 CREATE INDEX IF NOT EXISTS idx_media_assets_starred ON media_assets(is_starred, created_at);
 CREATE INDEX IF NOT EXISTS idx_folders_created_by ON folders(created_by);
 CREATE INDEX IF NOT EXISTS idx_folders_name ON folders(name);
+CREATE INDEX IF NOT EXISTS idx_folders_starred ON folders(is_starred, created_at);
 CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
 CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
 CREATE INDEX IF NOT EXISTS idx_invitations_expires_at ON invitations(expires_at);

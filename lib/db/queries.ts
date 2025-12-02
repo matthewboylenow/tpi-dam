@@ -330,7 +330,7 @@ export async function getFolders(): Promise<FolderWithCount[]> {
     LEFT JOIN users u ON f.created_by = u.id
     LEFT JOIN media_assets m ON f.id = m.folder_id
     GROUP BY f.id, u.name, u.email
-    ORDER BY f.name ASC
+    ORDER BY f.is_starred DESC, f.name ASC
   `;
 
   return result.rows as FolderWithCount[];
