@@ -12,7 +12,6 @@ import { FolderCreateModal } from "@/components/folders/FolderCreateModal";
 import { DndContext } from "@dnd-kit/core";
 import { InvitationForm } from "@/components/admin/InvitationForm";
 import { InvitationList } from "@/components/admin/InvitationList";
-import { StorageStats } from "@/components/admin/StorageStats";
 import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
 import { FolderCard } from "@/components/folders/FolderCard";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -34,7 +33,6 @@ type Tab = "media" | "invitations" | "folders";
 export function AdminClient({ user }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("media");
   const [media, setMedia] = useState<MediaAssetFull[]>([]);
-  const [allMedia, setAllMedia] = useState<MediaAssetFull[]>([]); // Unfiltered for stats
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [invitations, setInvitations] = useState<InvitationWithInviter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,18 +74,6 @@ export function AdminClient({ user }: Props) {
     }
   }, []);
 
-  const fetchAllMedia = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/media?scope=all`);
-      const data = await response.json();
-      if (data.success) {
-        setAllMedia(data.media);
-      }
-    } catch (error) {
-      console.error("Failed to fetch all media:", error);
-    }
-  }, []);
-
   const fetchMedia = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -112,8 +98,7 @@ export function AdminClient({ user }: Props) {
     } finally {
       setIsLoading(false);
     }
-    fetchAllMedia(); // Also fetch unfiltered for stats
-  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder, fetchAllMedia]);
+  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder]);
 
   function handleSortChange(newSortBy: SortBy, newSortOrder: SortOrder) {
     setSortBy(newSortBy);
@@ -504,11 +489,6 @@ export function AdminClient({ user }: Props) {
                     </p>
                   </div>
 
-                  {/* Storage Stats */}
-                  <StorageStats
-                    totalFiles={allMedia.length}
-                    totalSizeBytes={allMedia.reduce((acc, m) => acc + (m.file_size || 0), 0)}
-                  />
                 </>
               )}
 

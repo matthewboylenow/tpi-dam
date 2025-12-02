@@ -91,6 +91,7 @@ export function ImageEditor({ imageUrl, imageName, onSave, onClose }: Props) {
           </label>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => handleRotate(-90)}
               disabled={isSaving}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
@@ -101,6 +102,7 @@ export function ImageEditor({ imageUrl, imageName, onSave, onClose }: Props) {
               90° Left
             </button>
             <button
+              type="button"
               onClick={() => handleRotate(90)}
               disabled={isSaving}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
@@ -111,6 +113,7 @@ export function ImageEditor({ imageUrl, imageName, onSave, onClose }: Props) {
               </svg>
             </button>
             <button
+              type="button"
               onClick={() => setRotation(0)}
               disabled={isSaving || rotation === 0}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"

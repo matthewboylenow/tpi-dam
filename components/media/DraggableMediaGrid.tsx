@@ -136,17 +136,26 @@ function DraggableMediaCard({
     id: media.id,
   });
 
+  function handleContextMenu(e: React.MouseEvent) {
+    if (onContextMenu) {
+      e.preventDefault();
+      e.stopPropagation();
+      onContextMenu(e, media);
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onContextMenu={handleContextMenu}
       style={{
         opacity: isDragging ? 0.5 : 1,
         cursor: isDragging ? "grabbing" : "grab",
       }}
     >
-      <MediaCard media={media} onClick={onClick} onContextMenu={onContextMenu} />
+      <MediaCard media={media} onClick={onClick} />
     </div>
   );
 }
