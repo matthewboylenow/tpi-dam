@@ -6,6 +6,38 @@
   --foreground-rgb: 15, 23, 42;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 255, 255, 255;
+
+  /* Light mode colors */
+  --color-bg-primary: 249, 250, 251;
+  --color-bg-secondary: 255, 255, 255;
+  --color-bg-tertiary: 241, 245, 249;
+  --color-text-primary: 15, 23, 42;
+  --color-text-secondary: 71, 85, 105;
+  --color-text-tertiary: 148, 163, 184;
+  --color-border: 226, 232, 240;
+  --color-border-hover: 203, 213, 225;
+  --color-input-bg: 255, 255, 255;
+  --color-card-bg: 255, 255, 255;
+  --color-hover-bg: 241, 245, 249;
+}
+
+.dark {
+  --foreground-rgb: 226, 232, 240;
+  --background-start-rgb: 15, 23, 42;
+  --background-end-rgb: 15, 23, 42;
+
+  /* Dark mode colors */
+  --color-bg-primary: 15, 23, 42;
+  --color-bg-secondary: 30, 41, 59;
+  --color-bg-tertiary: 51, 65, 85;
+  --color-text-primary: 248, 250, 252;
+  --color-text-secondary: 203, 213, 225;
+  --color-text-tertiary: 148, 163, 184;
+  --color-border: 51, 65, 85;
+  --color-border-hover: 71, 85, 105;
+  --color-input-bg: 30, 41, 59;
+  --color-card-bg: 30, 41, 59;
+  --color-hover-bg: 51, 65, 85;
 }
 
 body {

@@ -1,8 +1,11 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { useState } from "react";
 import Link from "next/link";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ProfileMenu } from "@/components/ui/ProfileMenu";
+import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
 
 type Props = {
   user: SessionUser;
@@ -10,12 +13,10 @@ type Props = {
 };
 
 export function Shell({ user, children }: Props) {
-  async function handleSignOut() {
-    await signOut({ callbackUrl: "/" });
-  }
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Top Navigation */}
       <header className="bg-brand-bg border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,18 +46,13 @@ export function Shell({ user, children }: Props) {
               </nav>
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-white">{user.name}</p>
-                <p className="text-xs text-slate-400">{user.email}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
+            {/* Right Side: Theme Toggle + Profile Menu */}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <ProfileMenu
+                user={user}
+                onChangePassword={() => setIsPasswordModalOpen(true)}
+              />
             </div>
           </div>
         </div>
@@ -66,6 +62,12 @@ export function Shell({ user, children }: Props) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 }

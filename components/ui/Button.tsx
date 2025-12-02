@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             // Variants
             "bg-brand-primary-light hover:bg-brand-primary text-white":
               variant === "primary",
-            "bg-slate-200 hover:bg-slate-300 text-slate-900":
+            "bg-slate-200 hover:bg-slate-300 text-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white":
               variant === "secondary",
             "bg-brand-accent hover:bg-teal-600 text-white":
               variant === "accent",

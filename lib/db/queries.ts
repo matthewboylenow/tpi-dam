@@ -59,6 +59,17 @@ export async function getUserById(id: string): Promise<SafeUser | null> {
   return result.rows[0] as SafeUser | null;
 }
 
+export async function updateUserPassword(
+  userId: string,
+  passwordHash: string
+): Promise<void> {
+  await sql`
+    UPDATE users
+    SET password_hash = ${passwordHash}
+    WHERE id = ${userId}
+  `;
+}
+
 // ============================================================================
 // Media Asset Queries
 // ============================================================================
