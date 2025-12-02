@@ -34,6 +34,7 @@ type Tab = "media" | "invitations" | "folders";
 export function AdminClient({ user }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("media");
   const [media, setMedia] = useState<MediaAssetFull[]>([]);
+  const [allMedia, setAllMedia] = useState<MediaAssetFull[]>([]); // Unfiltered for stats
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [invitations, setInvitations] = useState<InvitationWithInviter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,6 +76,18 @@ export function AdminClient({ user }: Props) {
     }
   }, []);
 
+  const fetchAllMedia = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/media?scope=all`);
+      const data = await response.json();
+      if (data.success) {
+        setAllMedia(data.media);
+      }
+    } catch (error) {
+      console.error("Failed to fetch all media:", error);
+    }
+  }, []);
+
   const fetchMedia = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -99,7 +112,8 @@ export function AdminClient({ user }: Props) {
     } finally {
       setIsLoading(false);
     }
-  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder]);
+    fetchAllMedia(); // Also fetch unfiltered for stats
+  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder, fetchAllMedia]);
 
   function handleSortChange(newSortBy: SortBy, newSortOrder: SortOrder) {
     setSortBy(newSortBy);
@@ -476,8 +490,8 @@ export function AdminClient({ user }: Props) {
 
                   {/* Storage Stats */}
                   <StorageStats
-                    totalFiles={media.length}
-                    totalSizeBytes={media.reduce((acc, m) => acc + (m.file_size || 0), 0)}
+                    totalFiles={allMedia.length}
+                    totalSizeBytes={allMedia.reduce((acc, m) => acc + (m.file_size || 0), 0)}
                   />
                 </>
               )}

@@ -10,6 +10,7 @@ import { BulkMediaUploadForm } from "@/components/media/BulkMediaUploadForm";
 import { MediaDetailModal } from "@/components/media/MediaDetailModal";
 import { StarredMediaSection } from "@/components/media/StarredMediaSection";
 import { FolderList } from "@/components/folders/FolderList";
+import { FolderCard } from "@/components/folders/FolderCard";
 import { MediaAssetFull } from "@/types/media";
 import { FolderWithCount } from "@/types/folder";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
@@ -120,6 +121,11 @@ export function DashboardClient({ user }: Props) {
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
+  // When viewing "All Media", only show files without a folder
+  const displayMedia = !selectedFolderId
+    ? regularMedia.filter((m) => !m.folder_id)
+    : regularMedia;
+
   return (
     <Shell user={user}>
       <div className="flex gap-6">
@@ -226,14 +232,78 @@ export function DashboardClient({ user }: Props) {
                 onSelect={handleSelect}
               />
 
-              {/* Regular Media Grid */}
-              <MediaGrid
-                media={regularMedia}
-                onMediaClick={setSelectedMedia}
-                isSelectable={isSelectionMode}
-                selectedIds={selectedMediaIds}
-                onSelect={handleSelect}
-              />
+              {/* Folders Section (show when viewing "All Media") */}
+              {!selectedFolderId && folders.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="bg-blue-500 rounded-full p-2">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Folders</h2>
+                    <span className="text-sm text-slate-500">
+                      ({folders.length})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {folders.map((folder) => (
+                      <FolderCard
+                        key={folder.id}
+                        folder={folder}
+                        onClick={() => setSelectedFolderId(folder.id)}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-6 border-t border-slate-200"></div>
+                </div>
+              )}
+
+              {/* Files Section */}
+              {displayMedia.length > 0 && (
+                <div>
+                  {!selectedFolderId && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="bg-slate-500 rounded-full p-2">
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="text-xl font-bold text-slate-900">Files</h2>
+                      <span className="text-sm text-slate-500">
+                        ({displayMedia.length} not in folders)
+                      </span>
+                    </div>
+                  )}
+                  <MediaGrid
+                    media={displayMedia}
+                    onMediaClick={setSelectedMedia}
+                    isSelectable={isSelectionMode}
+                    selectedIds={selectedMediaIds}
+                    onSelect={handleSelect}
+                  />
+                </div>
+              )}
 
               {/* Show selection count when in selection mode */}
               {isSelectionMode && selectedMediaIds.size > 0 && (
