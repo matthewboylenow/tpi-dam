@@ -61,9 +61,9 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
       )}
     >
       <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-700 overflow-hidden rounded-t-2xl">
-        {/* Three-dot Menu */}
+        {/* Three-dot Menu - Always visible on mobile, hover on desktop */}
         {menuItems.length > 0 && (
-          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 left-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
             <CardMenu items={menuItems} />
           </div>
         )}

@@ -245,8 +245,42 @@ export function AdminClient({ user }: Props) {
     }
   }
 
+  async function handleDownloadMedia(mediaItem: MediaAssetFull) {
+    try {
+      // Try to use native share API on mobile
+      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
+        // Fetch the image as a blob
+        const response = await fetch(mediaItem.blob_url);
+        const blob = await response.blob();
+        const file = new File([blob], mediaItem.caption || 'image', { type: blob.type });
+
+        await navigator.share({
+          files: [file],
+          title: mediaItem.caption || 'Media',
+          text: `${mediaItem.caption || 'Media'} from Taylor Products`,
+        });
+      } else {
+        // Fallback to direct download
+        window.open(mediaItem.blob_url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to share/download:', error);
+      // Fallback to direct download if share fails
+      window.open(mediaItem.blob_url, '_blank');
+    }
+  }
+
   function getMediaMenuItems(mediaItem: MediaAssetFull) {
     return [
+      {
+        label: "Download / Share",
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        ),
+        onClick: () => handleDownloadMedia(mediaItem),
+      },
       {
         label: mediaItem.is_starred ? "Unstar" : "Star",
         icon: (

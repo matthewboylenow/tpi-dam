@@ -173,8 +173,42 @@ export function DashboardClient({ user }: Props) {
     }
   }
 
+  async function handleDownloadMedia(mediaItem: MediaAssetFull) {
+    try {
+      // Try to use native share API on mobile
+      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
+        // Fetch the image as a blob
+        const response = await fetch(mediaItem.blob_url);
+        const blob = await response.blob();
+        const file = new File([blob], mediaItem.caption || 'image', { type: blob.type });
+
+        await navigator.share({
+          files: [file],
+          title: mediaItem.caption || 'Media',
+          text: `${mediaItem.caption || 'Media'} from Taylor Products`,
+        });
+      } else {
+        // Fallback to direct download
+        window.open(mediaItem.blob_url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to share/download:', error);
+      // Fallback to direct download if share fails
+      window.open(mediaItem.blob_url, '_blank');
+    }
+  }
+
   function getMediaMenuItems(mediaItem: MediaAssetFull) {
     return [
+      {
+        label: "Download / Share",
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        ),
+        onClick: () => handleDownloadMedia(mediaItem),
+      },
       {
         label: mediaItem.is_starred ? "Unstar" : "Star",
         icon: (
@@ -207,9 +241,9 @@ export function DashboardClient({ user }: Props) {
 
   return (
     <Shell user={user}>
-      <div className="flex gap-6">
-        {/* Sidebar with Folders */}
-        <div className="w-64 flex-shrink-0">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar with Folders - Hidden on mobile, shown on desktop */}
+        <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
           <FolderList
             folders={folders}
             selectedFolderId={selectedFolderId}
@@ -218,22 +252,23 @@ export function DashboardClient({ user }: Props) {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-4 lg:space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white truncate">
                 My Media Library
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">
+              <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">
                 Manage your photos and videos
               </p>
             </div>
             <Button
               variant="primary"
               onClick={() => setShowUploadForm(!showUploadForm)}
+              className="hidden sm:flex"
             >
-              {showUploadForm ? "Cancel Upload" : "Upload Media"}
+              {showUploadForm ? "Cancel" : "Upload"}
             </Button>
           </div>
 
@@ -247,7 +282,7 @@ export function DashboardClient({ user }: Props) {
           )}
 
           {/* Filters and Sort */}
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex-1">
               <MediaFilters
                 search={search}
@@ -258,7 +293,7 @@ export function DashboardClient({ user }: Props) {
                 onTagChange={setTag}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end">
               <Button
                 variant={isSelectionMode ? "primary" : "secondary"}
                 onClick={() => {
@@ -267,20 +302,21 @@ export function DashboardClient({ user }: Props) {
                     setSelectedMediaIds(new Set());
                   }
                 }}
+                className="text-sm"
               >
                 {isSelectionMode ? (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    Cancel
+                    <span className="hidden sm:inline">Cancel</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Select
+                    <span className="hidden sm:inline">Select</span>
                   </>
                 )}
               </Button>
@@ -421,6 +457,19 @@ export function DashboardClient({ user }: Props) {
           )}
         </div>
       </div>
+
+      {/* Mobile Upload FAB - Only visible on mobile when not in upload mode */}
+      {!showUploadForm && (
+        <button
+          onClick={() => setShowUploadForm(true)}
+          className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-brand-primary hover:bg-brand-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95"
+          aria-label="Upload media"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      )}
 
       {/* Media Detail Modal */}
       <MediaDetailModal
