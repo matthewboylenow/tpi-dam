@@ -94,7 +94,8 @@ export async function DELETE(
 
 /**
  * PATCH /api/media/[id]
- * Update a media asset (admin only - for editing images)
+ * Update a media asset (admin only)
+ * Supports updating blob_url/file_size (for image editing) or caption (for renaming)
  */
 export async function PATCH(
   req: NextRequest,
@@ -111,16 +112,25 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { blob_url, file_size } = body;
+    const { blob_url, file_size, caption } = body;
 
-    if (!blob_url || !file_size) {
+    // Validate that at least one field is provided
+    if (!blob_url && !file_size && caption === undefined) {
       return NextResponse.json(
-        { error: "blob_url and file_size are required" },
+        { error: "At least one field (blob_url, file_size, or caption) is required" },
         { status: 400 }
       );
     }
 
-    await updateMediaAsset(params.id, { blob_url, file_size });
+    // If updating blob_url or file_size, both must be provided
+    if ((blob_url && !file_size) || (!blob_url && file_size)) {
+      return NextResponse.json(
+        { error: "Both blob_url and file_size are required when updating media files" },
+        { status: 400 }
+      );
+    }
+
+    await updateMediaAsset(params.id, { blob_url, file_size, caption });
 
     return NextResponse.json({
       success: true,

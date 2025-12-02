@@ -13,6 +13,14 @@ import {
 import { MediaAssetFull } from "@/types/media";
 import { MediaCard } from "./MediaCard";
 
+type MenuItem = {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  divider?: boolean;
+};
+
 type Props = {
   media: MediaAssetFull[];
   onMediaClick: (media: MediaAssetFull) => void;
@@ -22,6 +30,7 @@ type Props = {
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
   onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
+  getMenuItems?: (media: MediaAssetFull) => MenuItem[];
 };
 
 export function DraggableMediaGrid({
@@ -33,6 +42,7 @@ export function DraggableMediaGrid({
   selectedIds = new Set(),
   onSelect,
   onContextMenu,
+  getMenuItems,
 }: Props) {
   const [activeMedia, setActiveMedia] = useState<MediaAssetFull | null>(null);
 
@@ -85,6 +95,7 @@ export function DraggableMediaGrid({
             isSelected={selectedIds.has(item.id)}
             onSelect={onSelect}
             onContextMenu={onContextMenu}
+            menuItems={getMenuItems ? getMenuItems(item) : []}
           />
         ))}
       </div>
@@ -105,6 +116,7 @@ export function DraggableMediaGrid({
             media={item}
             onClick={() => onMediaClick(item)}
             onContextMenu={onContextMenu}
+            menuItems={getMenuItems ? getMenuItems(item) : []}
           />
         ))}
       </div>
@@ -112,7 +124,10 @@ export function DraggableMediaGrid({
       <DragOverlay>
         {activeMedia ? (
           <div className="opacity-80 scale-105 rotate-3 shadow-2xl">
-            <MediaCard media={activeMedia} />
+            <MediaCard
+              media={activeMedia}
+              menuItems={getMenuItems ? getMenuItems(activeMedia) : []}
+            />
           </div>
         ) : null}
       </DragOverlay>
@@ -127,10 +142,12 @@ function DraggableMediaCard({
   media,
   onClick,
   onContextMenu,
+  menuItems = [],
 }: {
   media: MediaAssetFull;
   onClick: () => void;
   onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
+  menuItems?: MenuItem[];
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: media.id,
@@ -155,7 +172,7 @@ function DraggableMediaCard({
         cursor: isDragging ? "grabbing" : "grab",
       }}
     >
-      <MediaCard media={media} onClick={onClick} />
+      <MediaCard media={media} onClick={onClick} menuItems={menuItems} />
     </div>
   );
 }

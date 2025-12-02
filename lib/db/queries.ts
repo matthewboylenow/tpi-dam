@@ -239,16 +239,38 @@ export async function deleteMediaAsset(id: string): Promise<void> {
 
 export async function updateMediaAsset(
   id: string,
-  updates: { blob_url?: string; file_size?: number }
+  updates: { blob_url?: string; file_size?: number; caption?: string }
 ): Promise<void> {
-  const { blob_url, file_size } = updates;
+  const { blob_url, file_size, caption } = updates;
 
-  if (blob_url && file_size) {
+  // Handle updating blob_url and file_size together (for image editing)
+  if (blob_url && file_size && caption === undefined) {
     await sql`
       UPDATE media_assets
       SET blob_url = ${blob_url}, file_size = ${file_size}, updated_at = NOW()
       WHERE id = ${id}
     `;
+    return;
+  }
+
+  // Handle updating caption alone (for renaming)
+  if (caption !== undefined && !blob_url && !file_size) {
+    await sql`
+      UPDATE media_assets
+      SET caption = ${caption}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+    return;
+  }
+
+  // Handle updating all three fields
+  if (blob_url && file_size && caption !== undefined) {
+    await sql`
+      UPDATE media_assets
+      SET blob_url = ${blob_url}, file_size = ${file_size}, caption = ${caption}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+    return;
   }
 }
 

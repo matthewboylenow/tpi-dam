@@ -4,6 +4,15 @@ import Image from "next/image";
 import { MediaAssetFull } from "@/types/media";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/Badge";
+import { CardMenu } from "@/components/ui/CardMenu";
+
+type MenuItem = {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  divider?: boolean;
+};
 
 type Props = {
   media: MediaAssetFull;
@@ -12,9 +21,10 @@ type Props = {
   isSelected?: boolean;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
   onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
+  menuItems?: MenuItem[];
 };
 
-export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect, onContextMenu }: Props) {
+export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect, onContextMenu, menuItems = [] }: Props) {
   const isVideo = media.mime_type?.startsWith("video/");
 
   function handleCheckboxClick(e: React.MouseEvent) {
@@ -45,12 +55,19 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
       onClick={handleCardClick}
       onContextMenu={handleContextMenu}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
+        "group relative flex flex-col rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
         "border text-left w-full",
         isSelected ? "border-brand-primary ring-2 ring-brand-primary/50" : "border-slate-200 dark:border-slate-700"
       )}
     >
-      <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-700">
+      <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-700 overflow-hidden rounded-t-2xl">
+        {/* Three-dot Menu */}
+        {menuItems.length > 0 && (
+          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <CardMenu items={menuItems} />
+          </div>
+        )}
+
         {/* Selection Checkbox */}
         {isSelectable && (
           <div

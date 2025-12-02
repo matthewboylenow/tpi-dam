@@ -3,15 +3,24 @@
 import { MediaAssetFull } from "@/types/media";
 import { MediaCard } from "./MediaCard";
 
+type MenuItem = {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  divider?: boolean;
+};
+
 type Props = {
   media: MediaAssetFull[];
   onMediaClick: (media: MediaAssetFull) => void;
   isSelectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
+  getMenuItems?: (media: MediaAssetFull) => MenuItem[];
 };
 
-export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect }: Props) {
+export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems }: Props) {
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -48,6 +57,7 @@ export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedI
           isSelectable={isSelectable}
           isSelected={selectedIds.has(item.id)}
           onSelect={onSelect}
+          menuItems={getMenuItems ? getMenuItems(item) : []}
         />
       ))}
     </div>

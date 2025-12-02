@@ -3,15 +3,24 @@
 import { MediaAssetFull } from "@/types/media";
 import { MediaCard } from "./MediaCard";
 
+type MenuItem = {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  divider?: boolean;
+};
+
 type Props = {
   starredMedia: MediaAssetFull[];
   onMediaClick: (media: MediaAssetFull) => void;
   isSelectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
+  getMenuItems?: (media: MediaAssetFull) => MenuItem[];
 };
 
-export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect }: Props) {
+export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems }: Props) {
   if (starredMedia.length === 0) return null;
 
   return (
@@ -40,6 +49,7 @@ export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable =
             isSelectable={isSelectable}
             isSelected={selectedIds.has(media.id)}
             onSelect={onSelect}
+            menuItems={getMenuItems ? getMenuItems(media) : []}
           />
         ))}
       </div>

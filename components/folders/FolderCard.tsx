@@ -59,14 +59,14 @@ export function FolderCard({
       onClick={handleCardClick}
       onContextMenu={handleContextMenu}
       className={clsx(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
+        "group relative flex flex-col rounded-2xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all",
         "border text-left w-full",
         isSelected
           ? "border-brand-primary ring-2 ring-brand-primary/50"
           : "border-slate-200 dark:border-slate-700"
       )}
     >
-      <div className="relative aspect-video w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center">
+      <div className="relative aspect-video w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center overflow-hidden rounded-t-2xl">
         {/* Three-dot Menu */}
         {menuItems.length > 0 && (
           <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
