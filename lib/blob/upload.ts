@@ -1,17 +1,8 @@
 import { put } from "@vercel/blob";
+import { generateUniqueFilename } from "@/lib/utils/filename";
 
-/**
- * Generate a unique filename with timestamp
- */
-export function generateUniqueFilename(originalName: string): string {
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 8);
-  const extension = originalName.split(".").pop();
-  const nameWithoutExt = originalName.replace(`.${extension}`, "");
-  const sanitized = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-
-  return `${sanitized}-${timestamp}-${randomStr}.${extension}`;
-}
+// Re-export for backwards compatibility
+export { generateUniqueFilename };
 
 /**
  * Upload a file directly to Vercel Blob

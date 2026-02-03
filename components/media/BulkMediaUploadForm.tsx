@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -9,6 +10,7 @@ import { FolderSelector } from "@/components/folders/FolderSelector";
 import { DropzoneUpload } from "@/components/upload/DropzoneUpload";
 import { IPhoneRecordingHelp } from "@/components/upload/iPhoneRecordingHelp";
 import type { FolderWithCount } from "@/types/folder";
+import { generateUniqueFilename } from "@/lib/utils/filename";
 
 type Props = {
   onSuccess: () => void;
@@ -122,21 +124,14 @@ export function BulkMediaUploadForm({ onSuccess, onCancel, folders = [] }: Props
         return updated;
       });
 
-      // Step 1: Upload file to Blob
-      const formData = new FormData();
-      formData.append("file", file);
+      // Step 1: Upload file directly to Blob (bypasses serverless function payload limit)
+      const filename = generateUniqueFilename(file.name);
+      const pathname = `media/${filename}`;
 
-      const uploadResponse = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload/client",
       });
-
-      if (!uploadResponse.ok) {
-        const data = await uploadResponse.json();
-        throw new Error(data.error || "UPLOAD_FAILED");
-      }
-
-      const uploadData = await uploadResponse.json();
 
       setFileStatuses(prev => {
         const updated = new Map(prev);
@@ -146,6 +141,12 @@ export function BulkMediaUploadForm({ onSuccess, onCancel, folders = [] }: Props
         }
         return updated;
       });
+
+      const uploadData = {
+        blob_url: blob.url,
+        mime_type: file.type,
+        file_size: file.size,
+      };
 
       // Step 2: Create media asset record
       const tagArray = tags
