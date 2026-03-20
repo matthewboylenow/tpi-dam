@@ -39,7 +39,7 @@ export async function createUser(
 
 export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await sql`
-    SELECT id, email, name, password_hash, role, created_at
+    SELECT id, email, name, password_hash, role, created_at, last_login_at
     FROM users
     WHERE email = ${email}
     LIMIT 1
@@ -50,13 +50,31 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 
 export async function getUserById(id: string): Promise<SafeUser | null> {
   const result = await sql`
-    SELECT id, email, name, role, created_at
+    SELECT id, email, name, role, created_at, last_login_at
     FROM users
     WHERE id = ${id}
     LIMIT 1
   `;
 
   return result.rows[0] as SafeUser | null;
+}
+
+export async function getAllUsers(): Promise<SafeUser[]> {
+  const result = await sql`
+    SELECT id, email, name, role, created_at, last_login_at
+    FROM users
+    ORDER BY created_at DESC
+  `;
+
+  return result.rows as SafeUser[];
+}
+
+export async function updateLastLogin(userId: string): Promise<void> {
+  await sql`
+    UPDATE users
+    SET last_login_at = NOW()
+    WHERE id = ${userId}
+  `;
 }
 
 export async function updateUserPassword(
@@ -479,6 +497,48 @@ export async function cleanupExpiredInvitations(): Promise<void> {
   await sql`
     DELETE FROM invitations
     WHERE expires_at < NOW() AND used_at IS NULL
+  `;
+}
+
+// ============================================================================
+// Password Reset Queries
+// ============================================================================
+
+export async function createPasswordReset(
+  email: string,
+  token: string,
+  expiresAt: Date
+): Promise<void> {
+  // Delete any existing unused resets for this email first
+  await sql`
+    DELETE FROM password_resets
+    WHERE email = ${email} AND used_at IS NULL
+  `;
+
+  await sql`
+    INSERT INTO password_resets (email, token, expires_at)
+    VALUES (${email}, ${token}, ${expiresAt.toISOString()})
+  `;
+}
+
+export async function getPasswordResetByToken(
+  token: string
+): Promise<{ id: string; email: string; expires_at: Date; used_at: Date | null } | null> {
+  const result = await sql`
+    SELECT id, email, expires_at, used_at
+    FROM password_resets
+    WHERE token = ${token}
+    LIMIT 1
+  `;
+
+  return result.rows[0] as { id: string; email: string; expires_at: Date; used_at: Date | null } | null;
+}
+
+export async function markPasswordResetUsed(token: string): Promise<void> {
+  await sql`
+    UPDATE password_resets
+    SET used_at = NOW()
+    WHERE token = ${token}
   `;
 }
 

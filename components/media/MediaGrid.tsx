@@ -2,6 +2,7 @@
 
 import { MediaAssetFull } from "@/types/media";
 import { MediaCard } from "./MediaCard";
+export { MediaGridSkeleton } from "./MediaCardSkeleton";
 
 type MenuItem = {
   label: string;
@@ -18,9 +19,10 @@ type Props = {
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
   getMenuItems?: (media: MediaAssetFull) => MenuItem[];
+  currentUserId?: string;
 };
 
-export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems }: Props) {
+export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems, currentUserId }: Props) {
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -58,6 +60,7 @@ export function MediaGrid({ media, onMediaClick, isSelectable = false, selectedI
           isSelected={selectedIds.has(item.id)}
           onSelect={onSelect}
           menuItems={getMenuItems ? getMenuItems(item) : []}
+          currentUserId={currentUserId}
         />
       ))}
     </div>

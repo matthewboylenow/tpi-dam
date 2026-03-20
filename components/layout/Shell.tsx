@@ -6,6 +6,7 @@ import { SessionUser } from "@/lib/auth/getCurrentUser";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ProfileMenu } from "@/components/ui/ProfileMenu";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
+import { SessionTimeoutWarner } from "@/components/ui/SessionTimeoutWarner";
 
 type Props = {
   user: SessionUser;
@@ -68,6 +69,9 @@ export function Shell({ user, children }: Props) {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
       />
+
+      {/* Session Timeout Warning */}
+      <SessionTimeoutWarner />
     </div>
   );
 }

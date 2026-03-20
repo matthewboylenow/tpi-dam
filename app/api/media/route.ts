@@ -85,6 +85,9 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") || undefined;
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
+    const folder_id = searchParams.get("folder_id") || undefined;
+    const sort_by = (searchParams.get("sort_by") || "created_at") as "created_at" | "file_size" | "client_name";
+    const sort_order = (searchParams.get("sort_order") || "desc") as "asc" | "desc";
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
@@ -107,14 +110,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Check permissions for scope=all
-    if (scope === "all" && user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
-        { status: 403 }
-      );
-    }
-
     // Build filter params
     const filterParams = {
       owner_user_id: scope === "mine" ? user.id : undefined,
@@ -123,6 +118,9 @@ export async function GET(req: NextRequest) {
       search,
       from,
       to,
+      folder_id,
+      sort_by,
+      sort_order,
       limit,
       offset,
     };

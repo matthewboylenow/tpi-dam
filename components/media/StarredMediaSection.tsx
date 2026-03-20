@@ -18,9 +18,10 @@ type Props = {
   selectedIds?: Set<string>;
   onSelect?: (mediaId: string, isSelected: boolean) => void;
   getMenuItems?: (media: MediaAssetFull) => MenuItem[];
+  currentUserId?: string;
 };
 
-export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems }: Props) {
+export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable = false, selectedIds = new Set(), onSelect, getMenuItems, currentUserId }: Props) {
   if (starredMedia.length === 0) return null;
 
   return (
@@ -50,6 +51,7 @@ export function StarredMediaSection({ starredMedia, onMediaClick, isSelectable =
             isSelected={selectedIds.has(media.id)}
             onSelect={onSelect}
             menuItems={getMenuItems ? getMenuItems(media) : []}
+            currentUserId={currentUserId}
           />
         ))}
       </div>

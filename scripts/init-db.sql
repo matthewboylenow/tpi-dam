@@ -8,6 +8,17 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'sales', -- 'sales' or 'admin'
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_login_at TIMESTAMPTZ
+);
+
+-- Password resets table
+CREATE TABLE IF NOT EXISTS password_resets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -86,3 +97,5 @@ CREATE INDEX IF NOT EXISTS idx_folders_starred ON folders(is_starred, created_at
 CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
 CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
 CREATE INDEX IF NOT EXISTS idx_invitations_expires_at ON invitations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token);
+CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email);

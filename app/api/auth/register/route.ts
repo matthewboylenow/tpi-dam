@@ -5,8 +5,11 @@ import {
   getUserByEmail,
   getInvitationByToken,
   markInvitationUsed,
+  getAllUsers,
 } from "@/lib/db/queries";
 import { acceptInvitationSchema } from "@/lib/validation/invitationSchemas";
+import { resend, isEmailConfigured } from "@/lib/email/client";
+import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +81,31 @@ export async function POST(req: NextRequest) {
 
     // Mark invitation as used
     await markInvitationUsed(token);
+
+    // Send welcome email to new user (non-blocking)
+    if (isEmailConfigured) {
+      resend.emails.send({
+        from: process.env.EMAIL_FROM || "noreply@taylorproducts.com",
+        to: email,
+        subject: "Welcome to Taylor Products DAM",
+        html: getWelcomeEmailHtml({ recipientName: name, recipientEmail: email, role: invitation.role }),
+        text: getWelcomeEmailText({ recipientName: name, recipientEmail: email, role: invitation.role }),
+      }).catch(err => console.error("Failed to send welcome email:", err));
+
+      // Notify all admins
+      getAllUsers().then(users => {
+        const admins = users.filter(u => u.role === "admin" && u.email !== email);
+        return Promise.all(admins.map(admin =>
+          resend.emails.send({
+            from: process.env.EMAIL_FROM || "noreply@taylorproducts.com",
+            to: admin.email,
+            subject: `New user registered: ${name}`,
+            html: `<p>A new user has just registered on Taylor Products DAM.</p><p><strong>Name:</strong> ${name}<br><strong>Email:</strong> ${email}<br><strong>Role:</strong> ${invitation.role}</p>`,
+            text: `New user registered on Taylor Products DAM.\n\nName: ${name}\nEmail: ${email}\nRole: ${invitation.role}`,
+          }).catch(err => console.error("Failed to notify admin:", err))
+        ));
+      }).catch(err => console.error("Failed to fetch admins for notification:", err));
+    }
 
     return NextResponse.json(
       {

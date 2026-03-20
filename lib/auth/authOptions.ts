@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { getUserByEmail } from "@/lib/db/queries";
+import { getUserByEmail, updateLastLogin } from "@/lib/db/queries";
 
 /**
  * NextAuth configuration
@@ -39,6 +39,9 @@ export const authOptions: NextAuthOptions = {
           if (!isValidPassword) {
             return null;
           }
+
+          // Record last login time
+          await updateLastLogin(user.id);
 
           // Return user object (without password hash)
           return {

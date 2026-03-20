@@ -1,10 +1,91 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { MediaAssetFull } from "@/types/media";
 import { clsx } from "clsx";
 import { Badge } from "@/components/ui/Badge";
 import { CardMenu } from "@/components/ui/CardMenu";
+
+function VideoThumbnail({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    function capture() {
+      if (!video || !canvas) return;
+      try {
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 180;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const url = canvas.toDataURL("image/jpeg", 0.7);
+        setThumbUrl(url);
+      } catch {
+        setFailed(true);
+      }
+    }
+
+    function onLoaded() {
+      video!.currentTime = 1;
+    }
+    function onSeeked() {
+      capture();
+    }
+    function onError() {
+      setFailed(true);
+    }
+
+    video.addEventListener("loadedmetadata", onLoaded);
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("error", onError);
+    video.load();
+
+    return () => {
+      video.removeEventListener("loadedmetadata", onLoaded);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("error", onError);
+    };
+  }, [src]);
+
+  return (
+    <div className="relative w-full h-full">
+      {/* Hidden video + canvas for thumbnail extraction */}
+      <video ref={videoRef} src={src} preload="metadata" muted playsInline crossOrigin="anonymous" className="hidden" />
+      <canvas ref={canvasRef} className="hidden" />
+
+      {thumbUrl && !failed ? (
+        <>
+          <img src={thumbUrl} alt="Video thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+          {/* Play overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs">Video</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 type MenuItem = {
   label: string;
@@ -22,10 +103,17 @@ type Props = {
   onSelect?: (mediaId: string, isSelected: boolean) => void;
   onContextMenu?: (e: React.MouseEvent, media: MediaAssetFull) => void;
   menuItems?: MenuItem[];
+  currentUserId?: string;
 };
 
-export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect, onContextMenu, menuItems = [] }: Props) {
+export function MediaCard({ media, onClick, isSelectable = false, isSelected = false, onSelect, onContextMenu, menuItems = [], currentUserId }: Props) {
   const isVideo = media.mime_type?.startsWith("video/");
+  const isOwn = currentUserId && media.owner_user_id === currentUserId;
+  const uploaderLabel = isOwn
+    ? "You"
+    : media.owner_name
+      ? media.owner_name.split(" ")[0]
+      : media.owner_email?.split("@")[0] ?? null;
 
   function handleCheckboxClick(e: React.MouseEvent) {
     e.stopPropagation();
@@ -114,30 +202,7 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
         )}
 
         {isVideo ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
-              <svg
-                className="w-12 h-12"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-xs">Video</span>
-            </div>
-          </div>
+          <VideoThumbnail src={media.blob_url} />
         ) : (
           media.blob_url && (
             <Image
@@ -171,13 +236,25 @@ export function MediaCard({ media, onClick, isSelectable = false, isSelected = f
             )}
           </div>
         )}
-        <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
-          {new Date(media.created_at).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            {new Date(media.created_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+          {uploaderLabel && (
+            <span className={clsx(
+              "text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0",
+              isOwn
+                ? "bg-brand-primary/10 text-brand-primary"
+                : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+            )}>
+              {uploaderLabel}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );

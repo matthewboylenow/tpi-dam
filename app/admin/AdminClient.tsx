@@ -15,10 +15,15 @@ import { InvitationList } from "@/components/admin/InvitationList";
 import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
 import { FolderCard } from "@/components/folders/FolderCard";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { RenameModal } from "@/components/ui/RenameModal";
+import { MediaGridSkeleton } from "@/components/media/MediaCardSkeleton";
+import { useToast } from "@/components/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import { MediaAssetFull } from "@/types/media";
 import { InvitationWithInviter } from "@/types/invitation";
 import { FolderWithCount } from "@/types/folder";
+import { SafeUser } from "@/types/user";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
 
 type SortBy = "created_at" | "caption";
@@ -28,18 +33,35 @@ type Props = {
   user: SessionUser;
 };
 
-type Tab = "media" | "invitations" | "folders";
+type Tab = "media" | "invitations" | "folders" | "users";
+
+function formatNYC(date: Date | string | null): string {
+  if (!date) return "Never";
+  return new Date(date).toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }) + " ET";
+}
 
 export function AdminClient({ user }: Props) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("media");
   const [media, setMedia] = useState<MediaAssetFull[]>([]);
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [invitations, setInvitations] = useState<InvitationWithInviter[]>([]);
+  const [users, setUsers] = useState<SafeUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMedia, setSelectedMedia] = useState<MediaAssetFull | null>(
-    null
-  );
+  const [selectedMedia, setSelectedMedia] = useState<MediaAssetFull | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
+
+  // Modals
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [renameModal, setRenameModal] = useState<{ media: MediaAssetFull } | null>(null);
 
   // Multi-select
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -118,6 +140,19 @@ export function AdminClient({ user }: Props) {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/users");
+      const data = await response.json();
+
+      if (data.users) {
+        setUsers(data.users);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === "media") {
       fetchMedia();
@@ -126,8 +161,10 @@ export function AdminClient({ user }: Props) {
       fetchInvitations();
     } else if (activeTab === "folders") {
       fetchFolders();
+    } else if (activeTab === "users") {
+      fetchUsers();
     }
-  }, [activeTab, fetchMedia, fetchInvitations, fetchFolders]);
+  }, [activeTab, fetchMedia, fetchInvitations, fetchFolders, fetchUsers]);
 
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
@@ -202,26 +239,22 @@ export function AdminClient({ user }: Props) {
     });
   }
 
-  async function handleRenameMedia(mediaItem: MediaAssetFull) {
-    const newCaption = prompt("Enter new caption:", mediaItem.caption || "");
-    if (newCaption === null) return; // User cancelled
-
+  async function doRenameMedia(mediaItem: MediaAssetFull, newCaption: string) {
     try {
       const response = await fetch(`/api/media/${mediaItem.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ caption: newCaption }),
       });
-
       if (response.ok) {
+        toast.success("Renamed successfully");
         await fetchMedia();
       } else {
-        const error = await response.json();
-        alert(`Failed to rename: ${error.error || "Unknown error"}`);
+        const data = await response.json();
+        toast.error(data.error || "Failed to rename");
       }
-    } catch (error) {
-      console.error("Failed to rename media:", error);
-      alert("Failed to rename media. Please try again.");
+    } catch {
+      toast.error("Failed to rename media");
     }
   }
 
@@ -232,16 +265,13 @@ export function AdminClient({ user }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_starred: !mediaItem.is_starred }),
       });
-
       if (response.ok) {
         await fetchMedia();
       } else {
-        const error = await response.json();
-        alert(`Failed to update star: ${error.error || "Unknown error"}`);
+        toast.error("Failed to update star");
       }
-    } catch (error) {
-      console.error("Failed to toggle star:", error);
-      alert("Failed to update star. Please try again.");
+    } catch {
+      toast.error("Failed to update star");
     }
   }
 
@@ -297,55 +327,85 @@ export function AdminClient({ user }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         ),
-        onClick: () => handleRenameMedia(mediaItem),
+        onClick: () => setRenameModal({ media: mediaItem }),
       },
     ];
   }
 
   async function handleDeleteMedia(mediaId: string) {
-    if (!confirm("Are you sure you want to delete this media? This action cannot be undone.")) {
-      return;
-    }
-
     try {
-      const response = await fetch(`/api/media/${mediaId}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
       if (response.ok) {
+        toast.success("Media deleted");
         await fetchMedia();
         await fetchFolders();
       } else {
-        alert("Failed to delete media");
+        toast.error("Failed to delete media");
       }
-    } catch (error) {
-      console.error("Error deleting media:", error);
-      alert("Failed to delete media");
+    } catch {
+      toast.error("Failed to delete media");
     }
   }
 
   async function handleDeleteFolder(folderId: string) {
-    if (!confirm("Are you sure you want to delete this folder? Media in this folder will not be deleted, just moved to 'All Media'.")) {
-      return;
-    }
-
     try {
-      const response = await fetch(`/api/folders/${folderId}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/folders/${folderId}`, { method: "DELETE" });
       if (response.ok) {
+        toast.success("Folder deleted");
         await fetchFolders();
         await fetchMedia();
-        if (selectedFolderId === folderId) {
-          setSelectedFolderId(null);
-        }
+        if (selectedFolderId === folderId) setSelectedFolderId(null);
       } else {
-        alert("Failed to delete folder");
+        toast.error("Failed to delete folder");
       }
-    } catch (error) {
-      console.error("Error deleting folder:", error);
-      alert("Failed to delete folder");
+    } catch {
+      toast.error("Failed to delete folder");
+    }
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedMediaIds);
+    try {
+      await Promise.all(ids.map(id => fetch(`/api/media/${id}`, { method: "DELETE" })));
+      toast.success(`Deleted ${ids.length} item${ids.length !== 1 ? "s" : ""}`);
+      handleClearSelection();
+      await fetchMedia();
+      await fetchFolders();
+    } catch {
+      toast.error("Some items failed to delete");
+    }
+  }
+
+  async function handleChangeUserRole(userId: string, newRole: "sales" | "admin") {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (res.ok) {
+        toast.success("Role updated");
+        fetchUsers();
+      } else {
+        toast.error("Failed to update role");
+      }
+    } catch {
+      toast.error("Failed to update role");
+    }
+  }
+
+  async function handleDeleteUser(userId: string) {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("User deleted");
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete user");
+      }
+    } catch {
+      toast.error("Failed to delete user");
     }
   }
 
@@ -419,7 +479,11 @@ export function AdminClient({ user }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           ),
-          onClick: () => handleDeleteMedia(media.id),
+          onClick: () => setConfirmModal({
+            title: "Delete Media",
+            message: `Delete "${media.caption || "this item"}"? This cannot be undone.`,
+            onConfirm: () => handleDeleteMedia(media.id),
+          }),
         },
       ];
     } else if (contextMenu.folder) {
@@ -463,7 +527,11 @@ export function AdminClient({ user }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           ),
-          onClick: () => handleDeleteFolder(folder.id),
+          onClick: () => setConfirmModal({
+            title: "Delete Folder",
+            message: "Delete this folder? Media inside will be moved to All Media.",
+            onConfirm: () => handleDeleteFolder(folder.id),
+          }),
         },
       ];
     }
@@ -515,6 +583,16 @@ export function AdminClient({ user }: Props) {
               }`}
             >
               Invite Users
+            </button>
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "users"
+                  ? "border-brand-primary text-brand-primary"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              Users
             </button>
           </nav>
         </div>
@@ -594,12 +672,7 @@ export function AdminClient({ user }: Props) {
 
               {/* Media Content */}
               {isLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
-                    <p className="mt-4 text-slate-600">Loading media...</p>
-                  </div>
-                </div>
+                <MediaGridSkeleton count={10} />
               ) : (
                 <>
                   {/* Starred Media Section */}
@@ -704,7 +777,11 @@ export function AdminClient({ user }: Props) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 ),
-                                onClick: () => handleDeleteFolder(folder.id),
+                                onClick: () => setConfirmModal({
+            title: "Delete Folder",
+            message: "Delete this folder? Media inside will be moved to All Media.",
+            onConfirm: () => handleDeleteFolder(folder.id),
+          }),
                               },
                             ]}
                           />
@@ -833,6 +910,98 @@ export function AdminClient({ user }: Props) {
           </div>
         )}
 
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Registered Users</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                All users who have signed up. Last login times shown in Eastern Time (NYC).
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              {users.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-slate-500">No users found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Name</th>
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Email</th>
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Role</th>
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Joined</th>
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Last Login (ET)</th>
+                        <th className="text-left px-6 py-3 font-semibold text-slate-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {users.map((u) => (
+                        <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 text-slate-900 font-medium">
+                            {u.name || <span className="text-slate-400 italic">No name</span>}
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">{u.email}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              u.role === "admin"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}>
+                              {u.role === "admin" ? "Admin" : "Sales"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">
+                            {formatNYC(u.created_at)}
+                          </td>
+                          <td className="px-6 py-4">
+                            {u.last_login_at ? (
+                              <span className="text-slate-600">{formatNYC(u.last_login_at)}</span>
+                            ) : (
+                              <span className="text-slate-400 italic">Never logged in</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={u.role}
+                                onChange={(e) => handleChangeUserRole(u.id, e.target.value as "sales" | "admin")}
+                                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                                disabled={u.id === user.id}
+                              >
+                                <option value="sales">Sales</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                              {u.id !== user.id && (
+                                <button
+                                  onClick={() => setConfirmModal({
+                                    title: "Delete User",
+                                    message: `Delete ${u.name || u.email}? This removes all their data.`,
+                                    onConfirm: () => handleDeleteUser(u.id),
+                                  })}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                  title="Delete user"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Invitations Tab */}
         {activeTab === "invitations" && (
           <div className="space-y-6">
@@ -879,8 +1048,34 @@ export function AdminClient({ user }: Props) {
         selectedCount={selectedMediaIds.size}
         onClearSelection={handleClearSelection}
         onMoveToFolder={handleBulkMoveToFolder}
+        onDelete={() => setConfirmModal({
+          title: "Delete Selected",
+          message: `Delete ${selectedMediaIds.size} item${selectedMediaIds.size !== 1 ? "s" : ""}? This cannot be undone.`,
+          onConfirm: handleBulkDelete,
+        })}
         folders={folders}
         isAdmin={true}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!confirmModal}
+        title={confirmModal?.title ?? ""}
+        message={confirmModal?.message ?? ""}
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { confirmModal?.onConfirm(); setConfirmModal(null); }}
+        onCancel={() => setConfirmModal(null)}
+      />
+
+      {/* Rename Modal */}
+      <RenameModal
+        isOpen={!!renameModal}
+        initialValue={renameModal?.media.caption ?? ""}
+        title="Rename Media"
+        label="Caption"
+        onConfirm={(value) => { doRenameMedia(renameModal!.media, value); setRenameModal(null); }}
+        onCancel={() => setRenameModal(null)}
       />
 
       {/* Context Menu */}

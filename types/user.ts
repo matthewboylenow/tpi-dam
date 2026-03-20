@@ -5,6 +5,7 @@ export interface User {
   password_hash: string;
   role: "sales" | "admin";
   created_at: Date;
+  last_login_at: Date | null;
 }
 
 export interface SafeUser {
@@ -13,6 +14,7 @@ export interface SafeUser {
   name: string | null;
   role: "sales" | "admin";
   created_at: Date;
+  last_login_at: Date | null;
 }
 
 export type CreateUserInput = {
