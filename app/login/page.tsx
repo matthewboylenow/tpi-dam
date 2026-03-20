@@ -91,16 +91,14 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {email.toLowerCase().endsWith("@taylorproducts.net") && (
-          <div className="mt-4 text-center">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-accent"
-            >
-              Forgot your password?
-            </Link>
-          </div>
-        )}
+        <div className="mt-4 text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-accent"
+          >
+            Forgot your password?
+          </Link>
+        </div>
 
         <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
           Need an account?{" "}
