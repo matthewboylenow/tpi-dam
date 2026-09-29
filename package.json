@@ -12,7 +12,8 @@
     "init-db": "tsx scripts/init-db.ts",
     "migrate": "tsx scripts/migrate-folders.ts",
     "create-admin": "tsx scripts/create-admin.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "migrate:review": "tsx scripts/migrate-review.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
