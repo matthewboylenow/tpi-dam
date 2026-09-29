@@ -32,7 +32,7 @@ export function StorageStats({ totalFiles, totalSizeBytes }: Props) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
       <div className="flex items-center gap-2 mb-4">
         <svg
           className="w-6 h-6 text-blue-600"

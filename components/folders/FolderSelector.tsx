@@ -15,13 +15,13 @@ export function FolderSelector({
 }: Props) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
         Folder (Optional)
       </label>
       <select
         value={selectedFolderId || ""}
         onChange={(e) => onSelectFolder(e.target.value || null)}
-        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
       >
         <option value="">No Folder</option>
         {folders.map((folder) => (

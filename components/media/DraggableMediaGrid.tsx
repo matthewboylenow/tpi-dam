@@ -85,11 +85,12 @@ export function DraggableMediaGrid({
   // If not admin or no move handler, or if in selection mode, just show regular grid
   if (!isAdmin || !onMediaMove || isSelectable) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {media.map((item) => (
           <MediaCard
             key={item.id}
             media={item}
+            showReviewState
             onClick={() => onMediaClick(item)}
             isSelectable={isSelectable}
             isSelected={selectedIds.has(item.id)}
@@ -109,7 +110,7 @@ export function DraggableMediaGrid({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {media.map((item) => (
           <DraggableMediaCard
             key={item.id}
@@ -126,6 +127,7 @@ export function DraggableMediaGrid({
           <div className="opacity-80 scale-105 rotate-3 shadow-2xl">
             <MediaCard
               media={activeMedia}
+              showReviewState
               menuItems={getMenuItems ? getMenuItems(activeMedia) : []}
             />
           </div>
@@ -172,7 +174,7 @@ function DraggableMediaCard({
         cursor: isDragging ? "grabbing" : "grab",
       }}
     >
-      <MediaCard media={media} onClick={onClick} menuItems={menuItems} />
+      <MediaCard media={media} onClick={onClick} menuItems={menuItems} showReviewState />
     </div>
   );
 }

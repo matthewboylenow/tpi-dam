@@ -41,6 +41,10 @@ export type MediaQuery = {
   clientName?: string;
   tag?: string;
   folderId?: string | null;
+  /** "new" or "reviewed"; empty for both. */
+  review?: string;
+  /** "any", "none", or a channel name; empty for all. */
+  used?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 };
@@ -55,6 +59,8 @@ export function buildMediaKey(query: MediaQuery, offset: number): string {
     ...(query.clientName && { client_name: query.clientName }),
     ...(query.tag && { tag: query.tag }),
     ...(query.folderId && { folder_id: query.folderId }),
+    ...(query.review && { review: query.review }),
+    ...(query.used && { used: query.used }),
     sort_by: query.sortBy ?? "created_at",
     sort_order: query.sortOrder ?? "desc",
     limit: String(MEDIA_PAGE_SIZE),
@@ -73,7 +79,7 @@ export function useMediaList(query: MediaQuery, enabled = true) {
       return buildMediaKey(query, pageIndex * MEDIA_PAGE_SIZE);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [enabled, query.search, query.clientName, query.tag, query.folderId, query.sortBy, query.sortOrder]
+    [enabled, query.search, query.clientName, query.tag, query.folderId, query.review, query.used, query.sortBy, query.sortOrder]
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } = useSWRInfinite<MediaPage>(getKey, {
@@ -136,6 +142,20 @@ export function revalidateAllMedia() {
     undefined,
     { revalidate: true }
   );
+}
+
+export const MEDIA_STATS_KEY = "/api/media/stats";
+
+export type MediaStats = { total: number; unreviewed: number; used: number; recent: number };
+
+/** Admin-only counts for the review queue. */
+export function useMediaStats(enabled = true) {
+  const { data, mutate } = useSWR<{ success: boolean; stats: MediaStats }>(enabled ? MEDIA_STATS_KEY : null);
+  return { stats: data?.stats ?? null, refresh: mutate };
+}
+
+export function revalidateMediaStats() {
+  return globalMutate(MEDIA_STATS_KEY);
 }
 
 /** Refresh the folders list (media counts change with uploads and moves). */

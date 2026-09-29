@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4">
       <Card className="w-full max-w-md p-8" variant="elevated">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-brand-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -22,20 +22,20 @@ export default function RegisterPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
             Registration is Invite-Only
           </h1>
-          <p className="text-slate-600">
+          <p className="text-slate-600 dark:text-slate-400">
             Taylor Products DAM uses invitation-based registration to ensure
             security and proper access control.
           </p>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-          <h2 className="font-semibold text-slate-900 mb-2">
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 mb-6">
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-2">
             Need an account?
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Please contact your administrator to receive an invitation link via
             email. The invitation will include all the information you need to
             create your account.
@@ -49,7 +49,7 @@ export default function RegisterPage() {
         </Link>
 
         <div className="mt-6 text-center">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Already have an invitation link? Use the link from your email to
             register.
           </p>

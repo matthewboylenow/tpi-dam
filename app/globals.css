@@ -2,55 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 255, 255, 255;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-  /* Light mode colors */
-  --color-bg-primary: 249, 250, 251;
-  --color-bg-secondary: 255, 255, 255;
-  --color-bg-tertiary: 241, 245, 249;
-  --color-text-primary: 15, 23, 42;
-  --color-text-secondary: 71, 85, 105;
-  --color-text-tertiary: 148, 163, 184;
-  --color-border: 226, 232, 240;
-  --color-border-hover: 203, 213, 225;
-  --color-input-bg: 255, 255, 255;
-  --color-card-bg: 255, 255, 255;
-  --color-hover-bg: 241, 245, 249;
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background: #1c4e80;
+    color: #fff;
+  }
+
+  /* Native controls follow the theme */
+  .dark {
+    color-scheme: dark;
+  }
 }
 
-.dark {
-  --foreground-rgb: 226, 232, 240;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 15, 23, 42;
+@layer components {
+  /* Small uppercase mono label used for section headings and metadata */
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400;
+  }
 
-  /* Dark mode colors */
-  --color-bg-primary: 15, 23, 42;
-  --color-bg-secondary: 30, 41, 59;
-  --color-bg-tertiary: 51, 65, 85;
-  --color-text-primary: 248, 250, 252;
-  --color-text-secondary: 203, 213, 225;
-  --color-text-tertiary: 148, 163, 184;
-  --color-border: 51, 65, 85;
-  --color-border-hover: 71, 85, 105;
-  --color-input-bg: 30, 41, 59;
-  --color-card-bg: 30, 41, 59;
-  --color-hover-bg: 51, 65, 85;
+  /* Section heading row: eyebrow + count + hairline */
+  .section-rule {
+    @apply flex items-center gap-3 mb-3;
+  }
+  .section-rule::after {
+    content: "";
+    @apply flex-1 h-px bg-slate-200 dark:bg-slate-800;
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
-
-/* Upload sheet and toasts rise into view */
+/* Upload sheet, toolbars and toasts rise into view */
 @keyframes slide-up {
   from {
     opacity: 0;

@@ -43,7 +43,7 @@ export function SessionTimeoutWarner() {
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
-      <div className="bg-white dark:bg-slate-800 border border-amber-200 rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-4 max-w-sm">
+      <div className="bg-white dark:bg-slate-800 border border-amber-200 rounded-lg shadow-2xl px-5 py-4 flex items-center gap-4 max-w-sm">
         <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
           <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

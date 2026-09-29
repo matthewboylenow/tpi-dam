@@ -58,7 +58,7 @@ const BORDER_COLORS: Record<ToastType, string> = {
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   return (
     <div
-      className={`flex items-start gap-3 bg-white dark:bg-slate-800 border ${BORDER_COLORS[toast.type]} rounded-xl shadow-lg px-4 py-3 min-w-[280px] max-w-sm animate-slide-up`}
+      className={`flex items-start gap-3 bg-white dark:bg-slate-800 border ${BORDER_COLORS[toast.type]} rounded-lg shadow-lg px-4 py-3 min-w-[280px] max-w-sm animate-slide-up`}
       role="alert"
     >
       {ICONS[toast.type]}

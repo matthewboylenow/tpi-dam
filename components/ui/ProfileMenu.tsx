@@ -35,14 +35,14 @@ export function ProfileMenu({ user, onChangePassword }: Props) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
         aria-label="User menu"
       >
-        <div className="w-8 h-8 rounded-full bg-brand-accent flex items-center justify-center text-white font-semibold text-sm">
+        <div className="w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center text-white font-semibold text-xs">
           {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
         </div>
         <div className="text-left hidden md:block">
-          <p className="text-sm font-medium text-white">{user.name}</p>
+          <p className="text-sm font-medium text-slate-900 dark:text-white leading-tight">{user.name}</p>
           <p className="text-xs text-slate-400">{user.email}</p>
         </div>
         <svg

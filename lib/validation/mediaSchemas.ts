@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { USAGE_CHANNELS } from "@/lib/usage";
 
 export const createMediaSchema = z.object({
   blob_url: z.string().url("Invalid blob URL"),
@@ -22,6 +23,19 @@ export const mediaFilterSchema = z.object({
   to: z.string().optional(),
   limit: z.number().positive().max(100).optional(),
   offset: z.number().nonnegative().optional(),
+  review: z.enum(["new", "reviewed"]).optional(),
+  used: z.enum(["any", "none", ...USAGE_CHANNELS]).optional(),
 });
 
 export type MediaFilterInput = z.infer<typeof mediaFilterSchema>;
+
+export const marketingUpdateSchema = z
+  .object({
+    reviewed: z.boolean().optional(),
+    used_on: z.array(z.enum(USAGE_CHANNELS)).max(USAGE_CHANNELS.length).optional(),
+  })
+  .refine((v) => v.reviewed !== undefined || v.used_on !== undefined, {
+    message: "Provide reviewed and/or used_on",
+  });
+
+export type MarketingUpdateInput = z.infer<typeof marketingUpdateSchema>;

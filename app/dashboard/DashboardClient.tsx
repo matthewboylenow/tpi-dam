@@ -14,6 +14,7 @@ import { FolderCard } from "@/components/folders/FolderCard";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { RenameModal } from "@/components/ui/RenameModal";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionRule } from "@/components/ui/SectionRule";
 import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
 import { useToast } from "@/components/providers/ToastProvider";
 import { MediaAssetFull } from "@/types/media";
@@ -267,10 +268,10 @@ export function DashboardClient({ user }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white truncate">
-                Media Library
+                Library
               </h1>
-              <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">
-                All photos and videos from your team
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">
+                Everything the team has shot, newest first.
               </p>
             </div>
             <Button
@@ -334,7 +335,7 @@ export function DashboardClient({ user }: Props) {
 
           {/* Current folder (the sidebar is hidden on phones, so this is the way back) */}
           {selectedFolderId && (
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-lg px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setSelectedFolderId(null)}
@@ -382,28 +383,8 @@ export function DashboardClient({ user }: Props) {
               {/* Folders Section (show when viewing "All Media") */}
               {!selectedFolderId && folders.length > 0 && (
                 <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="bg-blue-500 rounded-full p-2">
-                      <svg
-                        className="w-5 h-5 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                        />
-                      </svg>
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Folders</h2>
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                      ({folders.length})
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <SectionRule label="Folders" count={folders.length} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {folders.map((folder) => (
                       <FolderCard
                         key={folder.id}
@@ -423,24 +404,13 @@ export function DashboardClient({ user }: Props) {
                       />
                     ))}
                   </div>
-                  <div className="mt-6 border-t border-slate-200 dark:border-slate-700"></div>
                 </div>
               )}
 
               {/* Files Section */}
               {displayMedia.length > 0 ? (
                 <div>
-                  {!selectedFolderId && (
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="bg-slate-500 rounded-full p-2">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">Files</h2>
-                      <span className="text-sm text-slate-500 dark:text-slate-400">({displayMedia.length})</span>
-                    </div>
-                  )}
+                  <SectionRule label={selectedFolderId ? "In this folder" : "Files"} count={displayMedia.length} />
                   <MediaGrid
                     media={displayMedia}
                     onMediaClick={setSelectedMedia}
@@ -501,10 +471,11 @@ export function DashboardClient({ user }: Props) {
 
       {/* Media Detail Modal */}
       <MediaDetailModal
+        key={selectedMedia?.id ?? "none"}
         media={selectedMedia}
         onClose={() => setSelectedMedia(null)}
         userRole={user.role}
-        onStarToggle={refreshMedia}
+        onChange={(patch) => selectedMedia && updateItem(selectedMedia.id, patch)}
       />
 
       {/* Bulk Action Toolbar */}

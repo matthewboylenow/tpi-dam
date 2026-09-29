@@ -9,6 +9,8 @@ type Props = {
   onClearSelection: () => void;
   onMoveToFolder: (folderId: string | null) => Promise<void>;
   onDelete?: () => void;
+  /** Marketing: mark every selected item as looked at. */
+  onMarkReviewed?: () => void;
   folders?: FolderWithCount[];
   isAdmin?: boolean;
 };
@@ -18,6 +20,7 @@ export function BulkActionToolbar({
   onClearSelection,
   onMoveToFolder,
   onDelete,
+  onMarkReviewed,
   folders = [],
   isAdmin = false,
 }: Props) {
@@ -39,99 +42,55 @@ export function BulkActionToolbar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 animate-slide-up">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 flex items-center gap-4 min-w-[400px]">
-        {/* Selection Count */}
-        <div className="flex items-center gap-2">
-          <div className="bg-brand-primary rounded-full w-8 h-8 flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">
-              {selectedCount}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-slate-900">
-            {selectedCount} selected
-          </span>
-        </div>
+    <div className="fixed bottom-4 sm:bottom-6 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 animate-slide-up">
+      <div className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg shadow-2xl px-3 py-2.5 flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+        <span className="font-mono text-xs px-2 whitespace-nowrap">
+          <span className="font-semibold">{selectedCount}</span> selected
+        </span>
 
-        <div className="h-6 w-px bg-slate-200"></div>
+        <div className="hidden sm:block h-5 w-px bg-white/20 dark:bg-slate-900/20" />
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+          {isAdmin && onMarkReviewed && (
+            <Button size="sm" variant="ghost" onClick={onMarkReviewed} className="text-white hover:bg-white/10 dark:text-slate-900 dark:hover:bg-slate-900/10">
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Mark reviewed
+            </Button>
+          )}
+
           {isAdmin && (
             <div className="relative">
               <Button
-                variant="secondary"
+                size="sm"
+                variant="ghost"
                 onClick={() => setShowFolderMenu(!showFolderMenu)}
                 disabled={isMoving}
+                className="text-white hover:bg-white/10 dark:text-slate-900 dark:hover:bg-slate-900/10"
               >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                  />
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
-                {isMoving ? "Moving..." : "Move to Folder"}
+                {isMoving ? "Moving…" : "Move to folder"}
               </Button>
 
-              {/* Folder Dropdown */}
               {showFolderMenu && (
-                <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-xl border border-slate-200 py-2 min-w-[200px] max-h-[300px] overflow-y-auto">
+                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 min-w-[220px] max-h-[300px] overflow-y-auto">
                   <button
                     onClick={() => handleMoveToFolder(null)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300"
                   >
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                        />
-                      </svg>
-                      <span className="text-slate-600 font-medium">
-                        All Media (No Folder)
-                      </span>
-                    </div>
+                    No folder
                   </button>
-
                   {folders.map((folder) => (
                     <button
                       key={folder.id}
                       onClick={() => handleMoveToFolder(folder.id)}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
                     >
-                      <div className="flex items-center gap-2">
-                        <svg
-                          className="w-4 h-4 text-brand-primary"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                          />
-                        </svg>
-                        <span className="text-slate-900">{folder.name}</span>
-                        <span className="text-xs text-slate-400 ml-auto">
-                          ({folder.media_count})
-                        </span>
-                      </div>
+                      <span className="truncate">{folder.name}</span>
+                      <span className="font-mono text-[10px] text-slate-400 ml-auto">{folder.media_count}</span>
                     </button>
                   ))}
                 </div>
@@ -140,22 +99,21 @@ export function BulkActionToolbar({
           )}
 
           {onDelete && (
-            <Button
-              variant="secondary"
-              onClick={onDelete}
-              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+            <Button size="sm" variant="ghost" onClick={onDelete} className="text-red-300 hover:bg-red-500/20 dark:text-red-700 dark:hover:bg-red-500/10">
               Delete
             </Button>
           )}
-
-          <Button variant="secondary" onClick={onClearSelection}>
-            Clear
-          </Button>
         </div>
+
+        <button
+          onClick={onClearSelection}
+          className="ml-auto p-1.5 rounded-md hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors"
+          aria-label="Clear selection"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   );

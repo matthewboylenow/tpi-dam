@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getMediaAssetById, deleteMediaAsset, updateMediaAsset } from "@/lib/db/queries";
+import { deleteBlobs } from "@/lib/blob/delete";
 
 /**
  * GET /api/media/[id]
@@ -78,6 +79,7 @@ export async function DELETE(
     }
 
     await deleteMediaAsset(params.id);
+    await deleteBlobs([media.blob_url]);
 
     return NextResponse.json({
       success: true,
@@ -130,7 +132,17 @@ export async function PATCH(
       );
     }
 
+    const existing = await getMediaAssetById(params.id);
+    if (!existing) {
+      return NextResponse.json({ error: "Media not found" }, { status: 404 });
+    }
+
     await updateMediaAsset(params.id, { blob_url, file_size, caption });
+
+    // An edited image replaces the file; drop the old one from storage
+    if (blob_url && blob_url !== existing.blob_url) {
+      await deleteBlobs([existing.blob_url]);
+    }
 
     return NextResponse.json({
       success: true,

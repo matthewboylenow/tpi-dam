@@ -52,8 +52,8 @@ export function FolderCreateModal({ isOpen, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
           Create New Folder
         </h2>
 

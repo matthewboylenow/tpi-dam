@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4">
       <Card className="w-full max-w-md p-8" variant="elevated">
         {success ? (
           <div className="text-center">
@@ -65,15 +65,15 @@ export default function ResetPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Password Reset!</h1>
-            <p className="text-slate-600 mb-2">Your password has been updated successfully.</p>
-            <p className="text-sm text-slate-500">Redirecting to sign in...</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Password Reset!</h1>
+            <p className="text-slate-600 dark:text-slate-400 mb-2">Your password has been updated successfully.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Redirecting to sign in...</p>
           </div>
         ) : (
           <>
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">Reset Password</h1>
-              <p className="text-slate-600">Enter your new password below.</p>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Reset Password</h1>
+              <p className="text-slate-600 dark:text-slate-400">Enter your new password below.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +115,7 @@ export default function ResetPasswordPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-slate-600">
+            <div className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
               <Link
                 href="/login"
                 className="text-brand-primary-light hover:text-brand-primary font-semibold"

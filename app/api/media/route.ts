@@ -99,6 +99,8 @@ export async function GET(req: NextRequest) {
     const sort_order = (searchParams.get("sort_order") || "desc") as "asc" | "desc";
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
+    const review = searchParams.get("review") || undefined;
+    const used = searchParams.get("used") || undefined;
 
     // Validate filter params
     const filterValidation = mediaFilterSchema.safeParse({
@@ -110,6 +112,8 @@ export async function GET(req: NextRequest) {
       to,
       limit,
       offset,
+      review,
+      used,
     });
 
     if (!filterValidation.success) {
@@ -128,6 +132,8 @@ export async function GET(req: NextRequest) {
       from,
       to,
       folder_id,
+      review: filterValidation.data.review,
+      used: filterValidation.data.used,
       sort_by,
       sort_order,
       limit,

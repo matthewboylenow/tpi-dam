@@ -127,16 +127,18 @@ export async function getMediaAssetById(
       m.*,
       u.name as owner_name,
       u.email as owner_email,
+      r.name as reviewed_by_name,
       COALESCE(
         ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL),
         ARRAY[]::TEXT[]
       ) as tags
     FROM media_assets m
     LEFT JOIN users u ON m.owner_user_id = u.id
+    LEFT JOIN users r ON m.reviewed_by = r.id
     LEFT JOIN media_tags mt ON m.id = mt.media_id
     LEFT JOIN tags t ON mt.tag_id = t.id
     WHERE m.id = ${id}
-    GROUP BY m.id, u.name, u.email
+    GROUP BY m.id, u.name, u.email, r.name
   `;
 
   return result.rows[0] as MediaAssetFull | null;
@@ -154,6 +156,8 @@ export async function getMediaAssets(
     to,
     folder_id,
     starred_only,
+    review,
+    used,
     sort_by = "created_at",
     sort_order = "desc",
     limit = 50,
@@ -202,6 +206,21 @@ export async function getMediaAssets(
     conditions.push(`m.is_starred = true`);
   }
 
+  if (review === "new") {
+    conditions.push(`m.reviewed_at IS NULL`);
+  } else if (review === "reviewed") {
+    conditions.push(`m.reviewed_at IS NOT NULL`);
+  }
+
+  if (used === "any") {
+    conditions.push(`cardinality(m.used_on) > 0`);
+  } else if (used === "none") {
+    conditions.push(`cardinality(m.used_on) = 0`);
+  } else if (used) {
+    conditions.push(`$${valueIndex++} = ANY(m.used_on)`);
+    values.push(used);
+  }
+
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -229,17 +248,19 @@ export async function getMediaAssets(
       m.*,
       u.name as owner_name,
       u.email as owner_email,
+      r.name as reviewed_by_name,
       COALESCE(
         ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL),
         ARRAY[]::TEXT[]
       ) as tags
     FROM media_assets m
     LEFT JOIN users u ON m.owner_user_id = u.id
+    LEFT JOIN users r ON m.reviewed_by = r.id
     LEFT JOIN media_tags mt ON m.id = mt.media_id
     LEFT JOIN tags t ON mt.tag_id = t.id
     ${tagJoin}
     ${whereClause}
-    GROUP BY m.id, u.name, u.email
+    GROUP BY m.id, u.name, u.email, r.name
     ORDER BY m.is_starred DESC, ${sortColumn} ${sortDir}, m.created_at DESC
     LIMIT $${valueIndex++} OFFSET $${valueIndex++}
   `;
@@ -556,6 +577,74 @@ export async function markPasswordResetUsed(token: string): Promise<void> {
     SET used_at = NOW()
     WHERE token = ${token}
   `;
+}
+
+// ============================================================================
+// Marketing review + usage
+// ============================================================================
+
+export async function setMediaReview(
+  mediaId: string,
+  reviewed: boolean,
+  reviewerId: string
+): Promise<void> {
+  if (reviewed) {
+    await sql`
+      UPDATE media_assets
+      SET reviewed_at = NOW(), reviewed_by = ${reviewerId}
+      WHERE id = ${mediaId}
+    `;
+  } else {
+    await sql`
+      UPDATE media_assets
+      SET reviewed_at = NULL, reviewed_by = NULL
+      WHERE id = ${mediaId}
+    `;
+  }
+}
+
+export async function setMediaUsage(mediaId: string, channels: string[]): Promise<void> {
+  // Stored as a text[]; the literal form is what Postgres expects for the cast
+  const literal = `{${channels.map((c) => `"${c}"`).join(",")}}`;
+  await sql`
+    UPDATE media_assets
+    SET used_on = ${literal}::text[]
+    WHERE id = ${mediaId}
+  `;
+}
+
+export type MediaStats = {
+  total: number;
+  unreviewed: number;
+  used: number;
+  /** Uploads in the last 7 days. */
+  recent: number;
+};
+
+export async function getMediaStats(): Promise<MediaStats> {
+  const result = await sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE reviewed_at IS NULL)::int AS unreviewed,
+      COUNT(*) FILTER (WHERE cardinality(used_on) > 0)::int AS used,
+      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days')::int AS recent
+    FROM media_assets
+  `;
+  const row = result.rows[0];
+  return {
+    total: row?.total ?? 0,
+    unreviewed: row?.unreviewed ?? 0,
+    used: row?.used ?? 0,
+    recent: row?.recent ?? 0,
+  };
+}
+
+/** Blob URLs owned by a user, so their files can be removed with the account. */
+export async function getBlobUrlsForUser(userId: string): Promise<string[]> {
+  const result = await sql`
+    SELECT blob_url FROM media_assets WHERE owner_user_id = ${userId}
+  `;
+  return result.rows.map((r) => r.blob_url as string);
 }
 
 // ============================================================================

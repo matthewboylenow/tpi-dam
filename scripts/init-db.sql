@@ -33,7 +33,11 @@ CREATE TABLE IF NOT EXISTS media_assets (
   file_size BIGINT,
   folder_id UUID,
   is_starred BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  used_on TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ
 );
 
 -- Tags table
@@ -91,6 +95,8 @@ CREATE INDEX IF NOT EXISTS idx_media_assets_created ON media_assets(created_at D
 CREATE INDEX IF NOT EXISTS idx_media_assets_client ON media_assets(client_name);
 CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets(folder_id);
 CREATE INDEX IF NOT EXISTS idx_media_assets_starred ON media_assets(is_starred, created_at);
+CREATE INDEX IF NOT EXISTS idx_media_assets_reviewed ON media_assets(reviewed_at);
+CREATE INDEX IF NOT EXISTS idx_media_assets_used_on ON media_assets USING GIN (used_on);
 CREATE INDEX IF NOT EXISTS idx_folders_created_by ON folders(created_by);
 CREATE INDEX IF NOT EXISTS idx_folders_name ON folders(name);
 CREATE INDEX IF NOT EXISTS idx_folders_starred ON folders(is_starred, created_at);

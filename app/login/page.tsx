@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
+import { Wordmark } from "@/components/layout/Shell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        setError("That email and password don't match.");
         setIsLoading(false);
         return;
       }
@@ -44,98 +44,117 @@ export default function LoginPage() {
       router.push(destination);
       router.refresh();
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError("Something went wrong. Please try again.");
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4">
-      <Card className="w-full max-w-md p-8" variant="elevated">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Welcome Back
+    <div className="min-h-screen grid lg:grid-cols-[5fr_4fr] bg-white dark:bg-slate-950">
+      {/* Brand panel */}
+      <section className="relative bg-brand-primary text-white px-6 py-8 lg:px-14 lg:py-12 flex flex-col justify-between overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div className="relative">
+          <Wordmark />
+        </div>
+        <div className="relative mt-10 lg:mt-0 max-w-md">
+          <h1 className="text-3xl lg:text-5xl font-bold leading-[1.05]">
+            Shoot it on the road. Marketing takes it from there.
           </h1>
-          <p className="text-slate-600 dark:text-slate-300">Sign in to Taylor Products DAM</p>
+          <p className="mt-4 text-blue-100 text-sm lg:text-base leading-relaxed">
+            Photos and video from installs, demos and showroom visits, filed by
+            client and ready for the website and social.
+          </p>
         </div>
+        <p className="relative hidden lg:block font-mono text-[11px] uppercase tracking-[0.18em] text-blue-200/80">
+          Edison, NJ &nbsp;·&nbsp; Exton, PA
+        </p>
+      </section>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            fullWidth
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            inputMode="email"
-            placeholder="you@taylorproducts.net"
-          />
+      {/* Form */}
+      <section className="flex items-center justify-center px-6 py-10 lg:px-14">
+        <div className="w-full max-w-sm">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Sign in</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Use your Taylor Products email.
+          </p>
 
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            autoComplete="current-password"
-          />
-
-          <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-brand-primary focus:ring-brand-primary-light accent-brand-primary"
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
+              placeholder="you@taylorproducts.net"
             />
-            <span className="text-sm text-slate-700 dark:text-slate-300">
-              Keep me signed in for 30 days
-              <span className="block text-xs text-slate-500 dark:text-slate-400">
-                Uncheck on a shared device. You&apos;ll be signed out after a day of inactivity instead.
+
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              autoComplete="current-password"
+            />
+
+            <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 accent-brand-primary"
+              />
+              <span className="text-sm text-slate-700 dark:text-slate-300">
+                Keep me signed in for 30 days
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  Uncheck on a shared device. You&apos;ll be signed out after a day of inactivity instead.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
 
-          {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" role="alert">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            </div>
-          )}
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md" role="alert">
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            )}
 
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            disabled={isLoading}
-            className="mt-6"
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
+            <Button type="submit" variant="primary" fullWidth disabled={isLoading} className="mt-2" size="lg">
+              {isLoading ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
 
-        <div className="mt-4 text-center">
-          <Link
-            href="/forgot-password"
-            className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-accent"
-          >
-            Forgot your password?
-          </Link>
+          <div className="mt-6 flex items-center justify-between text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-slate-500 dark:text-slate-400 hover:text-brand-primary dark:hover:text-white"
+            >
+              Forgot your password?
+            </Link>
+            <Link
+              href="/register"
+              className="text-brand-primary dark:text-blue-300 hover:underline font-medium"
+            >
+              Need an account?
+            </Link>
+          </div>
         </div>
-
-        <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
-          Need an account?{" "}
-          <Link
-            href="/register"
-            className="text-brand-primary-light hover:text-brand-primary dark:text-brand-accent dark:hover:text-teal-400 font-semibold"
-          >
-            Register here
-          </Link>
-        </div>
-      </Card>
+      </section>
     </div>
   );
 }

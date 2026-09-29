@@ -91,7 +91,7 @@ export default function InviteRegisterPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4 py-8">
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4 py-8">
         <Card className="w-full max-w-md p-8" variant="elevated">
           <div className="text-center">
             <p className="text-slate-600 dark:text-slate-300">Validating invitation...</p>
@@ -102,7 +102,7 @@ export default function InviteRegisterPage({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4 py-8">
       <Card className="w-full max-w-md p-8" variant="elevated">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">

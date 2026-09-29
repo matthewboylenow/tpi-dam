@@ -10,7 +10,7 @@ type Props = {
 
 export function FolderList({ folders, selectedFolderId, onSelectFolder }: Props) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Folders</h2>
 
       <div className="space-y-1">

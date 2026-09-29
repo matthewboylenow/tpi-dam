@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-bg via-slate-900 to-brand-primary px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4">
       <Card className="w-full max-w-md p-8" variant="elevated">
         {submitted ? (
           <div className="text-center">
@@ -49,8 +49,8 @@ export default function ForgotPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Check Your Email</h1>
-            <p className="text-slate-600 mb-6">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check Your Email</h1>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
               If <strong>{email}</strong> exists in our system, you will receive a password reset link shortly.
             </p>
             <Link
@@ -63,8 +63,8 @@ export default function ForgotPasswordPage() {
         ) : (
           <>
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">Forgot Password</h1>
-              <p className="text-slate-600 text-sm">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Forgot Password</h1>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Enter your <strong>@taylorproducts.net</strong> email address and we&apos;ll send you a reset link.
               </p>
             </div>
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-slate-600">
+            <div className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
               <Link
                 href="/login"
                 className="text-brand-primary-light hover:text-brand-primary font-semibold"

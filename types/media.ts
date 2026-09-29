@@ -8,6 +8,11 @@ export interface MediaAsset {
   file_size: number | null;
   folder_id: string | null;
   is_starred: boolean;
+  /** When marketing looked at this upload; null means it's still in the queue. */
+  reviewed_at: Date | null;
+  reviewed_by: string | null;
+  /** Channels it has been used on: "web", "social", "print", "email". */
+  used_on: string[];
   created_at: Date;
 }
 
@@ -22,6 +27,7 @@ export interface MediaAssetWithTags extends MediaAsset {
 
 export interface MediaAssetFull extends MediaAssetWithOwner {
   tags: string[];
+  reviewed_by_name: string | null;
 }
 
 export type CreateMediaAssetInput = {
@@ -43,6 +49,10 @@ export type MediaFilterParams = {
   to?: string;
   folder_id?: string;
   starred_only?: boolean;
+  /** "new" = not yet reviewed by marketing, "reviewed" = looked at. */
+  review?: "new" | "reviewed";
+  /** "any" = used somewhere, "none" = unused, or a single channel name. */
+  used?: string;
   sort_by?: "created_at" | "file_size" | "client_name";
   sort_order?: "asc" | "desc";
   limit?: number;

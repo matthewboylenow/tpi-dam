@@ -26,7 +26,7 @@ export function IPhoneRecordingHelp() {
             />
           </svg>
           <span className="text-sm font-medium text-blue-900">
-            💡 iPhone Video Recording Tips
+            iPhone video recording tip
           </span>
         </div>
         <svg
@@ -73,19 +73,19 @@ export function IPhoneRecordingHelp() {
             <ul className="space-y-1 text-xs">
               <li className="flex justify-between">
                 <span>4K/60fps (2 min):</span>
-                <span className="font-mono text-red-600">~500MB ❌</span>
+                <span className="font-mono text-red-600">~500MB (too big)</span>
               </li>
               <li className="flex justify-between">
                 <span>4K/30fps (2 min):</span>
-                <span className="font-mono text-amber-600">~350MB ⚠️</span>
+                <span className="font-mono text-amber-600">~350MB (large)</span>
               </li>
               <li className="flex justify-between">
                 <span>1080p/60fps (2 min):</span>
-                <span className="font-mono text-green-600">~150MB ✅</span>
+                <span className="font-mono text-green-600">~150MB</span>
               </li>
               <li className="flex justify-between">
                 <span>1080p/30fps (2 min):</span>
-                <span className="font-mono text-green-600">~100MB ✅</span>
+                <span className="font-mono text-green-600">~100MB</span>
               </li>
             </ul>
           </div>

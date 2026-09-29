@@ -63,13 +63,13 @@ export function InvitationForm({ onSuccess }: Props) {
         />
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
             Role
           </label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "admin" | "sales")}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
           >
             <option value="sales">Sales Team Member</option>
             <option value="admin">Administrator</option>

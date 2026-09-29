@@ -15,8 +15,8 @@ export function DroppableFolderList({
   onSelectFolder,
 }: Props) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Folders</h2>
+    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-800">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Folders</h2>
 
       <div className="space-y-1">
         {/* All Media Option */}
@@ -43,7 +43,7 @@ export function DroppableFolderList({
       </div>
 
       {folders.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
           No folders yet
         </p>
       )}
@@ -79,7 +79,7 @@ function DroppableFolder({
           ? "bg-brand-primary text-white"
           : isOver
           ? "bg-brand-primary/20 border-2 border-brand-primary border-dashed"
-          : "hover:bg-slate-100 text-slate-700"
+          : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
       }`}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">

@@ -241,11 +241,11 @@ export function BulkMediaUploadForm({
   const allSucceeded = finished && successCount === total;
 
   return (
-    <div className="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[90vh] overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 sm:rounded-lg rounded-t-lg border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[90vh] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-brand-primary/10 dark:bg-brand-accent/15 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-lg bg-brand-primary/10 dark:bg-brand-accent/15 flex items-center justify-center">
             <svg className="w-5 h-5 text-brand-primary dark:text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
@@ -316,7 +316,7 @@ export function BulkMediaUploadForm({
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border-2 border-brand-primary/30 dark:border-brand-accent/40 bg-brand-primary/5 dark:bg-brand-accent/10 text-brand-primary dark:text-brand-accent active:scale-[0.98] transition-transform"
+                    className="flex flex-col items-center justify-center gap-2 py-6 rounded-lg border-2 border-brand-primary/30 dark:border-brand-accent/40 bg-brand-primary/5 dark:bg-brand-accent/10 text-brand-primary dark:text-brand-accent active:scale-[0.98] transition-transform"
                   >
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -327,7 +327,7 @@ export function BulkMediaUploadForm({
                   <button
                     type="button"
                     onClick={() => libraryInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-transform"
+                    className="flex flex-col items-center justify-center gap-2 py-6 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-transform"
                   >
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -370,7 +370,7 @@ export function BulkMediaUploadForm({
                     {items.map((item) => (
                       <li
                         key={item.id}
-                        className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
+                        className="relative aspect-square rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
                       >
                         {item.previewUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element

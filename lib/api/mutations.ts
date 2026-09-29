@@ -48,6 +48,19 @@ export function createMediaRecord(input: CreateMediaRecordInput) {
   });
 }
 
+export type MarketingPatch = {
+  reviewed?: boolean;
+  used_on?: string[];
+};
+
+/** Admin: mark as reviewed and/or record where it was used. */
+export function setMediaMarketing(id: string, patch: MarketingPatch) {
+  return apiFetch<{ success: boolean; media: MediaAsset }>(`/api/media/${id}/marketing`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
 export function toggleFolderStar(id: string) {
   return apiFetch(`/api/folders/${id}/star`, { method: "PATCH" });
 }

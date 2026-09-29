@@ -51,7 +51,7 @@ export function InvitationList({ invitations, onUpdate }: Props) {
   if (invitations.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500">No active invitations</p>
+        <p className="text-slate-500 dark:text-slate-400">No active invitations</p>
       </div>
     );
   }
@@ -60,20 +60,20 @@ export function InvitationList({ invitations, onUpdate }: Props) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-slate-200">
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+          <tr className="border-b border-slate-200 dark:border-slate-800">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Email
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Role
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Invited By
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Expires
             </th>
-            <th className="text-right py-3 px-4 text-sm font-semibold text-slate-700">
+            <th className="text-right py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Actions
             </th>
           </tr>
@@ -86,7 +86,7 @@ export function InvitationList({ invitations, onUpdate }: Props) {
 
             return (
               <tr key={invitation.id} className="border-b border-slate-100">
-                <td className="py-3 px-4 text-sm text-slate-900">
+                <td className="py-3 px-4 text-sm text-slate-900 dark:text-white">
                   {invitation.email}
                 </td>
                 <td className="py-3 px-4">
@@ -94,13 +94,13 @@ export function InvitationList({ invitations, onUpdate }: Props) {
                     className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                       invitation.role === "admin"
                         ? "bg-brand-primary/10 text-brand-primary"
-                        : "bg-slate-100 text-slate-700"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                     }`}
                   >
                     {invitation.role === "admin" ? "Admin" : "Sales"}
                   </span>
                 </td>
-                <td className="py-3 px-4 text-sm text-slate-600">
+                <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">
                   {invitation.inviter_name || invitation.inviter_email}
                 </td>
                 <td className="py-3 px-4 text-sm">

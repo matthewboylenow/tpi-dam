@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/getCurrentUser";
 import { sql } from "@vercel/postgres";
-import { deleteMediaAsset, getMediaAssets } from "@/lib/db/queries";
+import { getBlobUrlsForUser } from "@/lib/db/queries";
+import { deleteBlobs } from "@/lib/blob/delete";
 
 type Params = { params: { id: string } };
 
@@ -36,7 +37,14 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
     }
 
+    // Folders are shared; keep them by handing ownership to the admin doing the delete.
+    await sql`UPDATE folders SET created_by = ${admin.id} WHERE created_by = ${params.id}`;
+
+    // Their media rows cascade away with the user; remove the files too.
+    const blobUrls = await getBlobUrlsForUser(params.id);
     await sql`DELETE FROM users WHERE id = ${params.id}`;
+    await deleteBlobs(blobUrls);
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     if (error.message?.includes("Unauthorized") || error.message?.includes("Forbidden")) {

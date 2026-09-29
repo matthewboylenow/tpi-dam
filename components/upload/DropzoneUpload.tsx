@@ -26,9 +26,9 @@ function FilePreview({ file, index, onRemove, disabled }: { file: File; index: n
   }, [file, isImage]);
 
   return (
-    <div className="flex items-center gap-3 p-2.5 bg-white rounded-lg border border-slate-200 group">
+    <div className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 group">
       {/* Thumbnail */}
-      <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center">
+      <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
         {isImage && previewUrl ? (
           <img src={previewUrl} alt={file.name} className="w-full h-full object-cover" />
         ) : isVideo ? (
@@ -44,7 +44,7 @@ function FilePreview({ file, index, onRemove, disabled }: { file: File; index: n
 
       {/* File Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-800 truncate">{file.name}</p>
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{file.name}</p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-slate-400">{sizeMB} MB</span>
           <span className="text-xs text-slate-300">·</span>
@@ -107,10 +107,10 @@ export function DropzoneUpload({
       <div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-2xl transition-all cursor-pointer
+          relative border-2 border-dashed rounded-lg transition-all cursor-pointer
           ${isDragActive
             ? "border-brand-primary bg-brand-primary/5 scale-[1.01]"
-            : "border-slate-200 hover:border-brand-primary/50 hover:bg-slate-50/50"
+            : "border-slate-200 dark:border-slate-800 hover:border-brand-primary/50 hover:bg-slate-50/50"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
@@ -119,7 +119,7 @@ export function DropzoneUpload({
 
         <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 text-center">
           {/* Icon */}
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-colors ${
+          <div className={`w-16 h-16 rounded-lg flex items-center justify-center transition-colors ${
             isDragActive ? "bg-brand-primary/10" : "bg-slate-100"
           }`}>
             <svg
@@ -140,11 +140,11 @@ export function DropzoneUpload({
           {isDragActive ? (
             <div>
               <p className="text-lg font-semibold text-brand-primary">Drop files here</p>
-              <p className="text-sm text-slate-500 mt-1">Release to add them to your upload</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Release to add them to your upload</p>
             </div>
           ) : (
             <div>
-              <p className="text-base font-semibold text-slate-700">
+              <p className="text-base font-semibold text-slate-700 dark:text-slate-200">
                 <span className="text-brand-primary">Click to browse</span> or drag & drop
               </p>
               <p className="text-sm text-slate-400 mt-1">
@@ -156,7 +156,7 @@ export function DropzoneUpload({
           {/* Accepted formats */}
           <div className="flex items-center gap-2 flex-wrap justify-center">
             {["JPG", "PNG", "HEIC", "GIF", "WebP", "MP4", "MOV"].map(fmt => (
-              <span key={fmt} className="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-xs text-slate-500 font-medium shadow-sm">
+              <span key={fmt} className="px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md text-xs text-slate-500 dark:text-slate-400 font-medium shadow-sm">
                 {fmt}
               </span>
             ))}
@@ -168,7 +168,7 @@ export function DropzoneUpload({
       {selectedFiles.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between px-0.5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""} selected
             </p>
             {onFileRemove && !disabled && selectedFiles.length > 1 && (
