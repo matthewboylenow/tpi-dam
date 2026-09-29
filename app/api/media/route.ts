@@ -4,6 +4,7 @@ import {
   createMediaAsset,
   getMediaAssets,
   addTagsToMedia,
+  getFolderById,
 } from "@/lib/db/queries";
 import {
   createMediaSchema,
@@ -32,8 +33,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { blob_url, caption, client_name, mime_type, file_size, tags } =
+    const { blob_url, caption, client_name, mime_type, file_size, tags, folder_id } =
       validation.data;
+
+    if (folder_id) {
+      const folder = await getFolderById(folder_id);
+      if (!folder) {
+        return NextResponse.json({ error: "Folder not found" }, { status: 404 });
+      }
+    }
 
     // Create media asset record
     const mediaAsset = await createMediaAsset({
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
       client_name,
       mime_type,
       file_size,
+      folder_id: folder_id ?? null,
     });
 
     // Add tags if provided

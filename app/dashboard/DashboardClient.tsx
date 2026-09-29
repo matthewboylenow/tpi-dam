@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { MediaGrid, MediaGridSkeleton } from "@/components/media/MediaGrid";
 import { MediaFilters } from "@/components/media/MediaFilters";
 import { SortControls } from "@/components/media/SortControls";
-import { BulkMediaUploadForm } from "@/components/media/BulkMediaUploadForm";
+import { UploadSheet } from "@/components/upload/UploadSheet";
 import { MediaDetailModal } from "@/components/media/MediaDetailModal";
 import { StarredMediaSection } from "@/components/media/StarredMediaSection";
 import { FolderList } from "@/components/folders/FolderList";
@@ -17,9 +17,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
 import { useToast } from "@/components/providers/ToastProvider";
 import { MediaAssetFull } from "@/types/media";
-import { FolderWithCount } from "@/types/folder";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import { useFolders, useMediaList, revalidateAllMedia, revalidateFolders } from "@/lib/api/hooks";
+import {
+  starMedia,
+  renameMedia,
+  deleteMedia,
+  moveMedia,
+  runBulk,
+  describeBulk,
+} from "@/lib/api/mutations";
 
 type SortBy = "created_at" | "caption";
 type SortOrder = "desc" | "asc";
@@ -28,19 +36,8 @@ type Props = {
   user: SessionUser;
 };
 
-/** Items fetched per request; the API caps this at 100. */
-const PAGE_SIZE = 100;
-
 export function DashboardClient({ user }: Props) {
   const toast = useToast();
-  const [media, setMedia] = useState<MediaAssetFull[]>([]);
-  const [folders, setFolders] = useState<FolderWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // first load only
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-  const activeRequest = useRef<AbortController | null>(null);
-  const loadedCount = useRef(0); // read by "load more" for the next offset
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaAssetFull | null>(null);
 
@@ -65,87 +62,35 @@ export function DashboardClient({ user }: Props) {
   const debouncedClientName = useDebouncedValue(clientName);
   const debouncedTag = useDebouncedValue(tag);
 
-  const fetchFolders = useCallback(async () => {
-    try {
-      const response = await fetch("/api/folders");
-      const data = await response.json();
-      if (data.success) setFolders(data.folders);
-    } catch {
-      // silently fail — folders are supplementary
-    }
-  }, []);
-
-  /**
-   * Load media for the current filters. Only the very first load shows the
-   * skeleton; later loads keep the grid on screen. A newer request cancels
-   * any older one so stale results never overwrite fresh ones.
-   */
-  const fetchMedia = useCallback(async (options: { append?: boolean } = {}) => {
-    const { append = false } = options;
-    activeRequest.current?.abort();
-    const controller = new AbortController();
-    activeRequest.current = controller;
-
-    if (append) setIsLoadingMore(true);
-    else setIsRefreshing(true);
-
-    try {
-      const params = new URLSearchParams({
-        scope: "all",
-        ...(debouncedSearch && { search: debouncedSearch }),
-        ...(debouncedClientName && { client_name: debouncedClientName }),
-        ...(debouncedTag && { tag: debouncedTag }),
-        ...(selectedFolderId && { folder_id: selectedFolderId }),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        limit: String(PAGE_SIZE),
-        offset: String(append ? loadedCount.current : 0),
-      });
-      const response = await fetch(`/api/media?${params}`, { signal: controller.signal });
-      const data = await response.json();
-      if (controller.signal.aborted) return;
-      if (data.success) {
-        const page: MediaAssetFull[] = data.media;
-        setMedia((prev) => {
-          const next = append ? [...prev, ...page] : page;
-          loadedCount.current = next.length;
-          return next;
-        });
-        setHasMore(page.length === PAGE_SIZE);
-      } else {
-        toast.error(data.error || "Failed to load media");
-      }
-    } catch (err) {
-      if ((err as Error).name === "AbortError") return;
-      toast.error("Failed to load media");
-    } finally {
-      if (activeRequest.current === controller) {
-        setIsLoading(false);
-        setIsRefreshing(false);
-        setIsLoadingMore(false);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, debouncedClientName, debouncedTag, selectedFolderId, sortBy, sortOrder]);
+  const { folders } = useFolders();
+  const {
+    media,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    refresh: refreshMedia,
+    updateItem,
+    removeItems,
+  } = useMediaList({
+    search: debouncedSearch,
+    clientName: debouncedClientName,
+    tag: debouncedTag,
+    folderId: selectedFolderId,
+    sortBy,
+    sortOrder,
+  });
 
   function handleSortChange(newSortBy: SortBy, newSortOrder: SortOrder) {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
   }
 
-  useEffect(() => {
-    fetchFolders();
-  }, [fetchFolders]);
-
-  useEffect(() => {
-    fetchMedia();
-    return () => activeRequest.current?.abort();
-  }, [fetchMedia]);
-
   function handleUploadSuccess() {
     setShowUploadForm(false);
-    fetchMedia();
-    fetchFolders();
+    revalidateAllMedia();
+    revalidateFolders();
   }
 
   function handleSelect(mediaId: string, isSelected: boolean) {
@@ -166,76 +111,56 @@ export function DashboardClient({ user }: Props) {
   }
 
   async function doRenameMedia(mediaItem: MediaAssetFull, newCaption: string) {
+    const previous = mediaItem.caption;
+    updateItem(mediaItem.id, { caption: newCaption });
     try {
-      const response = await fetch(`/api/media/${mediaItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caption: newCaption }),
-      });
-      if (response.ok) {
-        toast.success("Renamed successfully");
-        fetchMedia();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to rename");
-      }
-    } catch {
-      toast.error("Failed to rename media");
+      await renameMedia(mediaItem.id, newCaption);
+      toast.success("Renamed successfully");
+    } catch (err) {
+      updateItem(mediaItem.id, { caption: previous });
+      toast.error((err as Error).message || "Failed to rename");
     }
   }
 
   async function handleToggleStar(mediaItem: MediaAssetFull) {
     const nextStarred = !mediaItem.is_starred;
     // Update immediately so the card moves without waiting on the network
-    const applyStar = (value: boolean) =>
-      setMedia((prev) => prev.map((m) => (m.id === mediaItem.id ? { ...m, is_starred: value } : m)));
-    applyStar(nextStarred);
+    updateItem(mediaItem.id, { is_starred: nextStarred });
     try {
-      const response = await fetch(`/api/media/${mediaItem.id}/star`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_starred: nextStarred }),
-      });
-      if (!response.ok) throw new Error("star failed");
+      await starMedia(mediaItem.id, nextStarred);
     } catch {
-      applyStar(!nextStarred);
+      updateItem(mediaItem.id, { is_starred: !nextStarred });
       toast.error("Failed to update star");
     }
   }
 
   async function handleDeleteMedia(mediaId: string) {
     try {
-      const response = await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
-      if (response.ok) {
-        toast.success("Media deleted");
-        fetchMedia();
-        fetchFolders();
-      } else {
-        toast.error("Failed to delete media");
-      }
+      await deleteMedia(mediaId);
+      removeItems([mediaId]);
+      toast.success("Media deleted");
+      revalidateFolders();
     } catch {
       toast.error("Failed to delete media");
     }
   }
 
-  /** Run one request per id and report how many actually succeeded. */
-  async function runBulk(ids: string[], request: (id: string) => Promise<Response>) {
-    const results = await Promise.allSettled(ids.map(request));
-    const failed = results.filter((r) => r.status === "rejected" || !r.value.ok).length;
-    return { succeeded: ids.length - failed, failed };
-  }
-
   async function handleBulkDelete() {
     const ids = Array.from(selectedMediaIds);
-    const { succeeded, failed } = await runBulk(ids, (id) => fetch(`/api/media/${id}`, { method: "DELETE" }));
-    if (failed === 0) {
-      toast.success(`Deleted ${succeeded} item${succeeded !== 1 ? "s" : ""}`);
-    } else {
-      toast.error(`Deleted ${succeeded}, but ${failed} item${failed !== 1 ? "s" : ""} failed`);
-    }
+    const { succeeded, failed } = await runBulk(ids, deleteMedia);
+    (failed === 0 ? toast.success : toast.error)(describeBulk("Deleted", succeeded, failed));
     handleClearSelection();
-    fetchMedia();
-    fetchFolders();
+    refreshMedia();
+    revalidateFolders();
+  }
+
+  async function handleBulkMove(folderId: string | null) {
+    const ids = Array.from(selectedMediaIds);
+    const { succeeded, failed } = await runBulk(ids, (id) => moveMedia(id, folderId));
+    (failed === 0 ? toast.success : toast.error)(describeBulk("Moved", succeeded, failed));
+    handleClearSelection();
+    refreshMedia();
+    revalidateFolders();
   }
 
   async function handleDownloadMedia(mediaItem: MediaAssetFull) {
@@ -350,21 +275,15 @@ export function DashboardClient({ user }: Props) {
             </div>
             <Button
               variant="primary"
-              onClick={() => setShowUploadForm(!showUploadForm)}
+              onClick={() => setShowUploadForm(true)}
               className="hidden sm:flex"
             >
-              {showUploadForm ? "Cancel" : "Upload"}
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Upload
             </Button>
           </div>
-
-          {/* Upload Form */}
-          {showUploadForm && (
-            <BulkMediaUploadForm
-              onSuccess={handleUploadSuccess}
-              onCancel={() => setShowUploadForm(false)}
-              folders={folders}
-            />
-          )}
 
           {/* Filters and Sort */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
@@ -548,11 +467,7 @@ export function DashboardClient({ user }: Props) {
 
               {hasMore && (
                 <div className="flex justify-center pt-6">
-                  <Button
-                    variant="secondary"
-                    onClick={() => fetchMedia({ append: true })}
-                    disabled={isLoadingMore}
-                  >
+                  <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
                     {isLoadingMore ? "Loading..." : "Load more"}
                   </Button>
                 </div>
@@ -562,11 +477,11 @@ export function DashboardClient({ user }: Props) {
         </div>
       </div>
 
-      {/* Mobile Upload FAB - Only visible on mobile when not in upload mode */}
+      {/* Mobile Upload FAB */}
       {!showUploadForm && (
         <button
           onClick={() => setShowUploadForm(true)}
-          className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-brand-primary hover:bg-brand-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95"
+          className="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-brand-primary hover:bg-brand-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95"
           aria-label="Upload media"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,35 +490,28 @@ export function DashboardClient({ user }: Props) {
         </button>
       )}
 
+      {/* Upload sheet */}
+      <UploadSheet
+        isOpen={showUploadForm}
+        onClose={() => setShowUploadForm(false)}
+        onSuccess={handleUploadSuccess}
+        folders={folders}
+        defaultFolderId={selectedFolderId}
+      />
+
       {/* Media Detail Modal */}
       <MediaDetailModal
         media={selectedMedia}
         onClose={() => setSelectedMedia(null)}
         userRole={user.role}
-        onStarToggle={fetchMedia}
+        onStarToggle={refreshMedia}
       />
 
       {/* Bulk Action Toolbar */}
       <BulkActionToolbar
         selectedCount={selectedMediaIds.size}
         onClearSelection={handleClearSelection}
-        onMoveToFolder={async (folderId) => {
-          const { succeeded, failed } = await runBulk(Array.from(selectedMediaIds), (id) =>
-            fetch(`/api/media/${id}/move`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ folder_id: folderId }),
-            })
-          );
-          if (failed === 0) {
-            toast.success(`Moved ${succeeded} item${succeeded !== 1 ? "s" : ""}`);
-          } else {
-            toast.error(`Moved ${succeeded}, but ${failed} item${failed !== 1 ? "s" : ""} failed`);
-          }
-          handleClearSelection();
-          fetchMedia();
-          fetchFolders();
-        }}
+        onMoveToFolder={handleBulkMove}
         onDelete={() => setConfirmModal({
           title: "Delete Selected",
           message: `Delete ${selectedMediaIds.size} item${selectedMediaIds.size !== 1 ? "s" : ""}? This cannot be undone.`,

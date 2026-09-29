@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/getCurrentUser";
 import { getAllUsers } from "@/lib/db/queries";
 
+// Always served per request: it depends on the caller's session cookie.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await requireAdmin();

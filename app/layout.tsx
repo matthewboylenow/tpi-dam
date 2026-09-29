@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
+import { SWRProvider } from "@/components/providers/SWRProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
           <SessionProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <SWRProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </SWRProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

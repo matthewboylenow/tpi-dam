@@ -248,6 +248,22 @@ export async function getMediaAssets(
   return result.rows as MediaAssetFull[];
 }
 
+/**
+ * Distinct client names, most recently used first.
+ * Feeds the upload form's suggestions so reps pick a name instead of retyping it.
+ */
+export async function getRecentClientNames(limit = 100): Promise<string[]> {
+  const result = await sql`
+    SELECT client_name
+    FROM media_assets
+    WHERE client_name IS NOT NULL AND client_name <> ''
+    GROUP BY client_name
+    ORDER BY MAX(created_at) DESC
+    LIMIT ${limit}
+  `;
+  return result.rows.map((r) => r.client_name as string);
+}
+
 export async function deleteMediaAsset(id: string): Promise<void> {
   await sql`
     DELETE FROM media_assets

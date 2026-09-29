@@ -8,12 +8,17 @@ import { getCurrentUser } from "@/lib/auth/getCurrentUser";
  * bypassing the serverless function payload limit (4.5MB)
  */
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as HandleUploadBody;
-
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let body: HandleUploadBody;
+    try {
+      body = (await req.json()) as HandleUploadBody;
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
     const jsonResponse = await handleUpload({
@@ -51,13 +56,9 @@ export async function POST(req: NextRequest) {
           }),
         };
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // This is called after the upload completes
-        // We could create the media record here, but we'll let the client do it
-        // to maintain consistency with the existing flow
-        console.log("Upload completed:", blob.url);
-        const payload = tokenPayload ? JSON.parse(tokenPayload) : null;
-        console.log("User ID:", payload?.userId);
+      onUploadCompleted: async () => {
+        // The browser creates the media record itself after the upload
+        // (see BulkMediaUploadForm), so nothing is needed here.
       },
     });
 

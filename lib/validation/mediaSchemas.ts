@@ -7,6 +7,7 @@ export const createMediaSchema = z.object({
   mime_type: z.string().optional(),
   file_size: z.number().positive().optional(),
   tags: z.array(z.string()).optional(),
+  folder_id: z.string().uuid().nullable().optional(),
 });
 
 export type CreateMediaInput = z.infer<typeof createMediaSchema>;

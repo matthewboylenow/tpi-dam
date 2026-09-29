@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { DraggableMediaGrid } from "@/components/media/DraggableMediaGrid";
 import { MediaFilters } from "@/components/media/MediaFilters";
 import { SortControls } from "@/components/media/SortControls";
 import { MediaDetailModal } from "@/components/media/MediaDetailModal";
-import { StarredMediaSection } from "@/components/media/StarredMediaSection";
 import { DroppableFolderList } from "@/components/folders/DroppableFolderList";
 import { FolderCreateModal } from "@/components/folders/FolderCreateModal";
 import { DndContext } from "@dnd-kit/core";
@@ -21,10 +20,28 @@ import { MediaGridSkeleton } from "@/components/media/MediaCardSkeleton";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import { MediaAssetFull } from "@/types/media";
-import { InvitationWithInviter } from "@/types/invitation";
 import { FolderWithCount } from "@/types/folder";
-import { SafeUser } from "@/types/user";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import {
+  useFolders,
+  useMediaList,
+  useUsers,
+  useInvitations,
+  revalidateFolders,
+} from "@/lib/api/hooks";
+import {
+  starMedia,
+  renameMedia,
+  deleteMedia,
+  moveMedia,
+  toggleFolderStar,
+  deleteFolder,
+  setUserRole,
+  deleteUser,
+  runBulk,
+  describeBulk,
+} from "@/lib/api/mutations";
 
 type SortBy = "created_at" | "caption";
 type SortOrder = "desc" | "asc";
@@ -51,11 +68,6 @@ function formatNYC(date: Date | string | null): string {
 export function AdminClient({ user }: Props) {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("media");
-  const [media, setMedia] = useState<MediaAssetFull[]>([]);
-  const [folders, setFolders] = useState<FolderWithCount[]>([]);
-  const [invitations, setInvitations] = useState<InvitationWithInviter[]>([]);
-  const [users, setUsers] = useState<SafeUser[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState<MediaAssetFull | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
 
@@ -83,88 +95,42 @@ export function AdminClient({ user }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  const fetchFolders = useCallback(async () => {
-    try {
-      const response = await fetch("/api/folders");
-      const data = await response.json();
+  // Text filters wait until typing pauses before hitting the API
+  const debouncedSearch = useDebouncedValue(search);
+  const debouncedClientName = useDebouncedValue(clientName);
+  const debouncedTag = useDebouncedValue(tag);
 
-      if (data.success) {
-        setFolders(data.folders);
-      }
-    } catch (error) {
-      console.error("Failed to fetch folders:", error);
-    }
-  }, []);
-
-  const fetchMedia = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        scope: "all",
-        ...(search && { search }),
-        ...(clientName && { client_name: clientName }),
-        ...(tag && { tag }),
-        ...(selectedFolderId && { folder_id: selectedFolderId }),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-
-      const response = await fetch(`/api/media?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setMedia(data.media);
-      }
-    } catch (error) {
-      console.error("Failed to fetch media:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder]);
+  // Data. Each list is cached, so switching tabs shows the last result
+  // instantly and refreshes in the background.
+  const { folders, refresh: fetchFolders } = useFolders(activeTab === "media" || activeTab === "folders");
+  const {
+    media,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    refresh: fetchMedia,
+    updateItem,
+    removeItems,
+  } = useMediaList(
+    {
+      search: debouncedSearch,
+      clientName: debouncedClientName,
+      tag: debouncedTag,
+      folderId: selectedFolderId,
+      sortBy,
+      sortOrder,
+    },
+    activeTab === "media"
+  );
+  const { invitations, refresh: fetchInvitations } = useInvitations(activeTab === "invitations");
+  const { users, refresh: fetchUsers } = useUsers(activeTab === "users");
 
   function handleSortChange(newSortBy: SortBy, newSortOrder: SortOrder) {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
   }
-
-  const fetchInvitations = useCallback(async () => {
-    try {
-      const response = await fetch("/api/invitations");
-      const data = await response.json();
-
-      if (data.invitations) {
-        setInvitations(data.invitations);
-      }
-    } catch (error) {
-      console.error("Failed to fetch invitations:", error);
-    }
-  }, []);
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const response = await fetch("/api/admin/users");
-      const data = await response.json();
-
-      if (data.users) {
-        setUsers(data.users);
-      }
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "media") {
-      fetchMedia();
-      fetchFolders();
-    } else if (activeTab === "invitations") {
-      fetchInvitations();
-    } else if (activeTab === "folders") {
-      fetchFolders();
-    } else if (activeTab === "users") {
-      fetchUsers();
-    }
-  }, [activeTab, fetchMedia, fetchInvitations, fetchFolders, fetchUsers]);
 
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
@@ -175,22 +141,14 @@ export function AdminClient({ user }: Props) {
     : regularMedia;
 
   async function handleMediaMove(mediaId: string, folderId: string | null) {
+    const previous = media.find((m) => m.id === mediaId)?.folder_id ?? null;
+    updateItem(mediaId, { folder_id: folderId });
     try {
-      const response = await fetch(`/api/media/${mediaId}/move`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder_id: folderId }),
-      });
-
-      if (response.ok) {
-        // Refresh media and folders
-        await fetchMedia();
-        await fetchFolders();
-      } else {
-        console.error("Failed to move media");
-      }
-    } catch (error) {
-      console.error("Error moving media:", error);
+      await moveMedia(mediaId, folderId);
+      revalidateFolders();
+    } catch (err) {
+      updateItem(mediaId, { folder_id: previous });
+      toast.error((err as Error).message || "Failed to move media");
     }
   }
 
@@ -212,15 +170,12 @@ export function AdminClient({ user }: Props) {
   }
 
   async function handleBulkMoveToFolder(folderId: string | null) {
-    const mediaIds = Array.from(selectedMediaIds);
-
-    // Move all selected media
-    await Promise.all(
-      mediaIds.map((mediaId) => handleMediaMove(mediaId, folderId))
-    );
-
-    // Clear selection and exit selection mode
+    const ids = Array.from(selectedMediaIds);
+    const { succeeded, failed } = await runBulk(ids, (id) => moveMedia(id, folderId));
+    (failed === 0 ? toast.success : toast.error)(describeBulk("Moved", succeeded, failed));
     handleClearSelection();
+    fetchMedia();
+    revalidateFolders();
   }
 
   function handleMediaContextMenu(e: React.MouseEvent, media: MediaAssetFull) {
@@ -240,38 +195,34 @@ export function AdminClient({ user }: Props) {
   }
 
   async function doRenameMedia(mediaItem: MediaAssetFull, newCaption: string) {
+    const previous = mediaItem.caption;
+    updateItem(mediaItem.id, { caption: newCaption });
     try {
-      const response = await fetch(`/api/media/${mediaItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caption: newCaption }),
-      });
-      if (response.ok) {
-        toast.success("Renamed successfully");
-        await fetchMedia();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to rename");
-      }
-    } catch {
-      toast.error("Failed to rename media");
+      await renameMedia(mediaItem.id, newCaption);
+      toast.success("Renamed successfully");
+    } catch (err) {
+      updateItem(mediaItem.id, { caption: previous });
+      toast.error((err as Error).message || "Failed to rename");
     }
   }
 
   async function handleToggleStar(mediaItem: MediaAssetFull) {
+    const nextStarred = !mediaItem.is_starred;
+    updateItem(mediaItem.id, { is_starred: nextStarred });
     try {
-      const response = await fetch(`/api/media/${mediaItem.id}/star`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_starred: !mediaItem.is_starred }),
-      });
-      if (response.ok) {
-        await fetchMedia();
-      } else {
-        toast.error("Failed to update star");
-      }
+      await starMedia(mediaItem.id, nextStarred);
     } catch {
+      updateItem(mediaItem.id, { is_starred: !nextStarred });
       toast.error("Failed to update star");
+    }
+  }
+
+  async function handleToggleFolderStar(folderId: string) {
+    try {
+      await toggleFolderStar(folderId);
+      fetchFolders();
+    } catch {
+      toast.error("Failed to update folder star");
     }
   }
 
@@ -334,78 +285,53 @@ export function AdminClient({ user }: Props) {
 
   async function handleDeleteMedia(mediaId: string) {
     try {
-      const response = await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
-      if (response.ok) {
-        toast.success("Media deleted");
-        await fetchMedia();
-        await fetchFolders();
-      } else {
-        toast.error("Failed to delete media");
-      }
-    } catch {
-      toast.error("Failed to delete media");
+      await deleteMedia(mediaId);
+      removeItems([mediaId]);
+      toast.success("Media deleted");
+      revalidateFolders();
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to delete media");
     }
   }
 
   async function handleDeleteFolder(folderId: string) {
     try {
-      const response = await fetch(`/api/folders/${folderId}`, { method: "DELETE" });
-      if (response.ok) {
-        toast.success("Folder deleted");
-        await fetchFolders();
-        await fetchMedia();
-        if (selectedFolderId === folderId) setSelectedFolderId(null);
-      } else {
-        toast.error("Failed to delete folder");
-      }
-    } catch {
-      toast.error("Failed to delete folder");
+      await deleteFolder(folderId);
+      toast.success("Folder deleted");
+      fetchFolders();
+      fetchMedia();
+      if (selectedFolderId === folderId) setSelectedFolderId(null);
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to delete folder");
     }
   }
 
   async function handleBulkDelete() {
     const ids = Array.from(selectedMediaIds);
-    try {
-      await Promise.all(ids.map(id => fetch(`/api/media/${id}`, { method: "DELETE" })));
-      toast.success(`Deleted ${ids.length} item${ids.length !== 1 ? "s" : ""}`);
-      handleClearSelection();
-      await fetchMedia();
-      await fetchFolders();
-    } catch {
-      toast.error("Some items failed to delete");
-    }
+    const { succeeded, failed } = await runBulk(ids, deleteMedia);
+    (failed === 0 ? toast.success : toast.error)(describeBulk("Deleted", succeeded, failed));
+    handleClearSelection();
+    fetchMedia();
+    revalidateFolders();
   }
 
   async function handleChangeUserRole(userId: string, newRole: "sales" | "admin") {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-      if (res.ok) {
-        toast.success("Role updated");
-        fetchUsers();
-      } else {
-        toast.error("Failed to update role");
-      }
-    } catch {
-      toast.error("Failed to update role");
+      await setUserRole(userId, newRole);
+      toast.success("Role updated");
+      fetchUsers();
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to update role");
     }
   }
 
   async function handleDeleteUser(userId: string) {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("User deleted");
-        fetchUsers();
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to delete user");
-      }
-    } catch {
-      toast.error("Failed to delete user");
+      await deleteUser(userId);
+      toast.success("User deleted");
+      fetchUsers();
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to delete user");
     }
   }
 
@@ -443,16 +369,7 @@ export function AdminClient({ user }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           ),
-          onClick: async () => {
-            const response = await fetch(`/api/media/${media.id}/star`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ is_starred: !media.is_starred }),
-            });
-            if (response.ok) {
-              await fetchMedia();
-            }
-          },
+          onClick: () => handleToggleStar(media),
         },
         {
           label: "Move to Folder",
@@ -462,8 +379,10 @@ export function AdminClient({ user }: Props) {
             </svg>
           ),
           onClick: () => {
-            // This will be handled by showing a submenu in a future enhancement
-            alert("Use drag-and-drop or bulk select to move files to folders");
+            // Select just this item so the toolbar's folder picker appears
+            setIsSelectionMode(true);
+            setSelectedMediaIds(new Set([media.id]));
+            toast.info("Pick a folder from the toolbar below");
           },
         },
         {
@@ -505,14 +424,7 @@ export function AdminClient({ user }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           ),
-          onClick: async () => {
-            const response = await fetch(`/api/folders/${folder.id}/star`, {
-              method: "PATCH",
-            });
-            if (response.ok) {
-              await fetchFolders();
-            }
-          },
+          onClick: () => handleToggleFolderStar(folder.id),
         },
         {
           divider: true,
@@ -663,7 +575,7 @@ export function AdminClient({ user }: Props) {
                   <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                     <p className="text-sm text-slate-600">
                       Showing <span className="font-semibold">{media.length}</span>{" "}
-                      media assets
+                      media assets{hasMore ? " (more available below)" : ""}
                     </p>
                   </div>
 
@@ -674,7 +586,7 @@ export function AdminClient({ user }: Props) {
               {isLoading ? (
                 <MediaGridSkeleton count={10} />
               ) : (
-                <>
+                <div className={isRefreshing ? "opacity-60 transition-opacity" : "transition-opacity"} aria-busy={isRefreshing}>
                   {/* Starred Media Section */}
                   {starredMedia.length > 0 && (
                     <div className="mb-8">
@@ -755,14 +667,7 @@ export function AdminClient({ user }: Props) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                   </svg>
                                 ),
-                                onClick: async () => {
-                                  const response = await fetch(`/api/folders/${folder.id}/star`, {
-                                    method: "PATCH",
-                                  });
-                                  if (response.ok) {
-                                    await fetchFolders();
-                                  }
-                                },
+                                onClick: () => handleToggleFolderStar(folder.id),
                               },
                               {
                                 divider: true,
@@ -830,7 +735,15 @@ export function AdminClient({ user }: Props) {
                       />
                     </div>
                   )}
-                </>
+
+                  {hasMore && (
+                    <div className="flex justify-center pt-6">
+                      <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
+                        {isLoadingMore ? "Loading..." : "Load more"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
