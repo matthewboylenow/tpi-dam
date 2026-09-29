@@ -10,6 +10,7 @@ import { useClientNames } from "@/lib/api/hooks";
 import { createMediaRecord } from "@/lib/api/mutations";
 import type { FolderWithCount } from "@/types/folder";
 import { generateUniqueFilename } from "@/lib/utils/filename";
+import { isHeicFile, convertHeicToJpeg } from "@/lib/utils/heic";
 
 type Props = {
   onSuccess: () => void;
@@ -24,9 +25,12 @@ type UploadItem = {
   id: string;
   file: File;
   previewUrl: string | null;
-  status: "pending" | "uploading" | "success" | "error";
+  /** "converting": a HEIC photo is being turned into a JPEG before upload. */
+  status: "converting" | "pending" | "uploading" | "success" | "error";
   progress: number;
   error?: string;
+  /** Non-blocking note shown on the tile (e.g. HEIC kept as-is). */
+  note?: string;
 };
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
@@ -121,6 +125,7 @@ export function BulkMediaUploadForm({
   }, []);
 
   function addFiles(files: File[]) {
+    const toConvert: UploadItem[] = [];
     setItems((prev) => {
       const known = new Set(prev.map((i) => i.id));
       const additions: UploadItem[] = [];
@@ -129,17 +134,38 @@ export function BulkMediaUploadForm({
         if (known.has(id)) continue;
         known.add(id);
         const error = validate(file);
-        additions.push({
+        const heic = !error && isHeicFile(file);
+        const item: UploadItem = {
           id,
           file,
-          previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
-          status: error ? "error" : "pending",
+          // Browsers other than Safari can't preview HEIC; the JPEG will replace it
+          previewUrl: file.type.startsWith("image/") && !heic ? URL.createObjectURL(file) : null,
+          status: error ? "error" : heic ? "converting" : "pending",
           progress: 0,
           error,
-        });
+        };
+        additions.push(item);
+        if (heic) toConvert.push(item);
       }
       return [...prev, ...additions];
     });
+    toConvert.forEach(convertItem);
+  }
+
+  /** Turn an iPhone HEIC into a JPEG so every browser can show it later. */
+  async function convertItem(item: UploadItem) {
+    try {
+      const jpeg = await convertHeicToJpeg(item.file);
+      patchItem(item.id, {
+        file: jpeg,
+        previewUrl: URL.createObjectURL(jpeg),
+        status: "pending",
+      });
+    } catch (err) {
+      console.error("HEIC conversion failed:", err);
+      // Still allow the upload; Safari users will see it, others get a download.
+      patchItem(item.id, { status: "pending", note: "Couldn't convert to JPEG; uploads as HEIC" });
+    }
   }
 
   function removeItem(id: string) {
@@ -234,10 +260,11 @@ export function BulkMediaUploadForm({
   const retryableCount = items.filter((i) => i.status === "error" && !validate(i.file)).length;
   const pendingCount = items.filter((i) => i.status === "pending").length;
   const uploadingCount = items.filter((i) => i.status === "uploading").length;
+  const convertingCount = items.filter((i) => i.status === "converting").length;
   const overallProgress = total
     ? Math.round(items.reduce((sum, i) => sum + (i.status === "success" ? 100 : i.progress), 0) / total)
     : 0;
-  const finished = total > 0 && !isUploading && pendingCount === 0 && uploadingCount === 0;
+  const finished = total > 0 && !isUploading && pendingCount === 0 && uploadingCount === 0 && convertingCount === 0;
   const allSucceeded = finished && successCount === total;
 
   return (
@@ -282,7 +309,7 @@ export function BulkMediaUploadForm({
                   {successCount} file{successCount !== 1 ? "s" : ""} uploaded
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  {clientName.trim() ? `Filed under ${clientName.trim()}. ` : ""}Marketing can see it now.
+                  {clientName.trim() ? `Saved under ${clientName.trim()}. ` : ""}They are in the library now.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -296,7 +323,7 @@ export function BulkMediaUploadForm({
               <input
                 ref={cameraInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*,video/*,.heic,.heif"
                 capture="environment"
                 className="hidden"
                 onChange={handleInputChange}
@@ -304,7 +331,7 @@ export function BulkMediaUploadForm({
               <input
                 ref={libraryInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*,video/*,.heic,.heif"
                 multiple
                 className="hidden"
                 onChange={handleInputChange}
@@ -385,6 +412,17 @@ export function BulkMediaUploadForm({
                         )}
 
                         {/* Status overlay */}
+                        {item.status === "converting" && (
+                          <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center gap-1.5 text-white">
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="text-[11px] font-medium">Converting HEIC</span>
+                          </div>
+                        )}
+                        {item.note && item.status === "pending" && (
+                          <div className="absolute inset-x-0 top-0 bg-amber-500/90 text-white text-[10px] leading-tight px-1.5 py-1 text-center">
+                            {item.note}
+                          </div>
+                        )}
                         {item.status === "uploading" && (
                           <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 text-white">
                             <span className="text-sm font-semibold">{item.progress}%</span>
@@ -527,6 +565,7 @@ export function BulkMediaUploadForm({
               ) : total > 0 ? (
                 <span>
                   <span className="font-semibold text-slate-700 dark:text-slate-200">{pendingCount}</span> ready
+                  {convertingCount > 0 && <span className="ml-2">· converting {convertingCount}</span>}
                   {errorCount > 0 && <span className="text-red-500 ml-2">· {errorCount} can&apos;t upload</span>}
                 </span>
               ) : null}
@@ -546,7 +585,7 @@ export function BulkMediaUploadForm({
                   <Button type="button" variant="secondary" onClick={onCancel} disabled={isUploading}>
                     Cancel
                   </Button>
-                  <Button type="submit" variant="primary" disabled={pendingCount === 0 || isUploading}>
+                  <Button type="submit" variant="primary" disabled={pendingCount === 0 || isUploading || convertingCount > 0}>
                     {isUploading ? (
                       <span className="flex items-center gap-2">
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

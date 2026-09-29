@@ -10,6 +10,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { starMedia, setMediaMarketing } from "@/lib/api/mutations";
 import { USAGE_CHANNELS, USAGE_LABELS, isUsageChannel, type UsageChannel } from "@/lib/usage";
 import { ImageEditor } from "./ImageEditor";
+import { isHeicUrl } from "@/lib/utils/heic";
 
 type Props = {
   media: MediaAssetFull | null;
@@ -35,6 +36,7 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
   const [usedOn, setUsedOn] = useState<UsageChannel[]>((media?.used_on ?? []).filter(isUsageChannel));
   const [isSaving, setIsSaving] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   // Escape closes
   useEffect(() => {
@@ -146,6 +148,13 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
             <video src={media.blob_url} controls playsInline className="w-full h-full max-h-[50vh] lg:max-h-[90vh] object-contain">
               Your browser does not support the video tag.
             </video>
+          ) : imageFailed ? (
+            <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-slate-300">
+              <span className="eyebrow text-slate-400">{isHeicUrl(media.blob_url) ? "HEIC photo" : "Preview unavailable"}</span>
+              <p className="text-sm max-w-xs">
+                This browser can&apos;t display this file. Download the original below, or open it in Safari.
+              </p>
+            </div>
           ) : (
             <Image
               src={media.blob_url}
@@ -154,6 +163,7 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
               height={1200}
               className="w-full h-auto max-h-[50vh] lg:max-h-[90vh] object-contain"
               unoptimized
+              onError={() => setImageFailed(true)}
             />
           )}
           <button

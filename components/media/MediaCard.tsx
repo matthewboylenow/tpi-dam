@@ -6,6 +6,30 @@ import { MediaAssetFull } from "@/types/media";
 import { clsx } from "clsx";
 import { CardMenu } from "@/components/ui/CardMenu";
 import { USAGE_LABELS, isUsageChannel } from "@/lib/usage";
+import { isHeicUrl } from "@/lib/utils/heic";
+
+/** Photo that shows a labelled placeholder if this browser can't decode it. */
+function PhotoThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-1 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 text-center">
+        <span className="eyebrow">{isHeicUrl(src) ? "HEIC photo" : "Preview unavailable"}</span>
+        <span className="text-[11px] leading-tight">Open to download the original</span>
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      className="object-cover"
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 function VideoThumbnail({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -204,15 +228,7 @@ export function MediaCard({
         {isVideo ? (
           <VideoThumbnail src={media.blob_url} />
         ) : (
-          media.blob_url && (
-            <Image
-              src={media.blob_url}
-              alt={media.caption || "Media asset"}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-            />
-          )
+          media.blob_url && <PhotoThumbnail src={media.blob_url} alt={media.caption || "Media asset"} />
         )}
       </div>
 

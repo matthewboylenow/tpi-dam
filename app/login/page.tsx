@@ -67,15 +67,15 @@ export default function LoginPage() {
         </div>
         <div className="relative mt-10 lg:mt-0 max-w-md">
           <h1 className="text-3xl lg:text-5xl font-bold leading-[1.05]">
-            Shoot it on the road. Marketing takes it from there.
+            Digital Asset Manager
           </h1>
           <p className="mt-4 text-blue-100 text-sm lg:text-base leading-relaxed">
-            Photos and video from installs, demos and showroom visits, filed by
-            client and ready for the website and social.
+            Upload your photos and videos here. Marketing uses them for the
+            website and social media.
           </p>
         </div>
-        <p className="relative hidden lg:block font-mono text-[11px] uppercase tracking-[0.18em] text-blue-200/80">
-          Edison, NJ &nbsp;·&nbsp; Exton, PA
+        <p className="relative hidden lg:block text-sm text-blue-200/80">
+          Taylor Products, Inc.
         </p>
       </section>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Sign in</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Use your Taylor Products email.
+            Use your Taylor Products email address.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">

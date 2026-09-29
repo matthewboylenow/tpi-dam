@@ -20,7 +20,7 @@ export function Wordmark({ className }: { className?: string }) {
     <span className={clsx("inline-flex items-baseline gap-2", className)}>
       <span className="font-display font-bold text-lg tracking-tight leading-none">Taylor Products</span>
       <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] leading-none opacity-70">
-        Media
+        DAM
       </span>
     </span>
   );

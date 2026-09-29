@@ -481,7 +481,7 @@ export function AdminClient({ user }: Props) {
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">Marketing</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Review what the team shot, mark what you used, manage the library.
+              Review new uploads, mark what has been used, and manage users and folders.
             </p>
           </div>
           {stats && (

@@ -271,7 +271,7 @@ export function DashboardClient({ user }: Props) {
                 Library
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">
-                Everything the team has shot, newest first.
+                All photos and videos uploaded by the team.
               </p>
             </div>
             <Button

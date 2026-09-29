@@ -24,7 +24,7 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Taylor Products DAM",
-  description: "Field photos and video from Taylor Products sales, ready for web and social.",
+  description: "Taylor Products Digital Asset Manager. Upload and manage photos and videos.",
 };
 
 export const viewport: Viewport = {

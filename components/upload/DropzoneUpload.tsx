@@ -95,6 +95,8 @@ export function DropzoneUpload({
     onDrop,
     accept: {
       "image/*": [],
+      "image/heic": [".heic"],
+      "image/heif": [".heif"],
       "video/*": [],
     },
     multiple,
