@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { MediaGrid, MediaGridSkeleton } from "@/components/media/MediaGrid";
@@ -19,6 +19,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { MediaAssetFull } from "@/types/media";
 import { FolderWithCount } from "@/types/folder";
 import { SessionUser } from "@/lib/auth/getCurrentUser";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 
 type SortBy = "created_at" | "caption";
 type SortOrder = "desc" | "asc";
@@ -27,11 +28,19 @@ type Props = {
   user: SessionUser;
 };
 
+/** Items fetched per request; the API caps this at 100. */
+const PAGE_SIZE = 100;
+
 export function DashboardClient({ user }: Props) {
   const toast = useToast();
   const [media, setMedia] = useState<MediaAssetFull[]>([]);
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // first load only
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const activeRequest = useRef<AbortController | null>(null);
+  const loadedCount = useRef(0); // read by "load more" for the next offset
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaAssetFull | null>(null);
 
@@ -51,6 +60,11 @@ export function DashboardClient({ user }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
+  // Text filters wait until typing pauses before hitting the API
+  const debouncedSearch = useDebouncedValue(search);
+  const debouncedClientName = useDebouncedValue(clientName);
+  const debouncedTag = useDebouncedValue(tag);
+
   const fetchFolders = useCallback(async () => {
     try {
       const response = await fetch("/api/folders");
@@ -61,27 +75,58 @@ export function DashboardClient({ user }: Props) {
     }
   }, []);
 
-  const fetchMedia = useCallback(async () => {
-    setIsLoading(true);
+  /**
+   * Load media for the current filters. Only the very first load shows the
+   * skeleton; later loads keep the grid on screen. A newer request cancels
+   * any older one so stale results never overwrite fresh ones.
+   */
+  const fetchMedia = useCallback(async (options: { append?: boolean } = {}) => {
+    const { append = false } = options;
+    activeRequest.current?.abort();
+    const controller = new AbortController();
+    activeRequest.current = controller;
+
+    if (append) setIsLoadingMore(true);
+    else setIsRefreshing(true);
+
     try {
       const params = new URLSearchParams({
         scope: "all",
-        ...(search && { search }),
-        ...(clientName && { client_name: clientName }),
-        ...(tag && { tag }),
+        ...(debouncedSearch && { search: debouncedSearch }),
+        ...(debouncedClientName && { client_name: debouncedClientName }),
+        ...(debouncedTag && { tag: debouncedTag }),
         ...(selectedFolderId && { folder_id: selectedFolderId }),
         sort_by: sortBy,
         sort_order: sortOrder,
+        limit: String(PAGE_SIZE),
+        offset: String(append ? loadedCount.current : 0),
       });
-      const response = await fetch(`/api/media?${params}`);
+      const response = await fetch(`/api/media?${params}`, { signal: controller.signal });
       const data = await response.json();
-      if (data.success) setMedia(data.media);
-    } catch {
+      if (controller.signal.aborted) return;
+      if (data.success) {
+        const page: MediaAssetFull[] = data.media;
+        setMedia((prev) => {
+          const next = append ? [...prev, ...page] : page;
+          loadedCount.current = next.length;
+          return next;
+        });
+        setHasMore(page.length === PAGE_SIZE);
+      } else {
+        toast.error(data.error || "Failed to load media");
+      }
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
       toast.error("Failed to load media");
     } finally {
-      setIsLoading(false);
+      if (activeRequest.current === controller) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsLoadingMore(false);
+      }
     }
-  }, [search, clientName, tag, selectedFolderId, sortBy, sortOrder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, debouncedClientName, debouncedTag, selectedFolderId, sortBy, sortOrder]);
 
   function handleSortChange(newSortBy: SortBy, newSortOrder: SortOrder) {
     setSortBy(newSortBy);
@@ -94,6 +139,7 @@ export function DashboardClient({ user }: Props) {
 
   useEffect(() => {
     fetchMedia();
+    return () => activeRequest.current?.abort();
   }, [fetchMedia]);
 
   function handleUploadSuccess() {
@@ -139,18 +185,20 @@ export function DashboardClient({ user }: Props) {
   }
 
   async function handleToggleStar(mediaItem: MediaAssetFull) {
+    const nextStarred = !mediaItem.is_starred;
+    // Update immediately so the card moves without waiting on the network
+    const applyStar = (value: boolean) =>
+      setMedia((prev) => prev.map((m) => (m.id === mediaItem.id ? { ...m, is_starred: value } : m)));
+    applyStar(nextStarred);
     try {
       const response = await fetch(`/api/media/${mediaItem.id}/star`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_starred: !mediaItem.is_starred }),
+        body: JSON.stringify({ is_starred: nextStarred }),
       });
-      if (response.ok) {
-        fetchMedia();
-      } else {
-        toast.error("Failed to update star");
-      }
+      if (!response.ok) throw new Error("star failed");
     } catch {
+      applyStar(!nextStarred);
       toast.error("Failed to update star");
     }
   }
@@ -170,17 +218,24 @@ export function DashboardClient({ user }: Props) {
     }
   }
 
+  /** Run one request per id and report how many actually succeeded. */
+  async function runBulk(ids: string[], request: (id: string) => Promise<Response>) {
+    const results = await Promise.allSettled(ids.map(request));
+    const failed = results.filter((r) => r.status === "rejected" || !r.value.ok).length;
+    return { succeeded: ids.length - failed, failed };
+  }
+
   async function handleBulkDelete() {
     const ids = Array.from(selectedMediaIds);
-    try {
-      await Promise.all(ids.map(id => fetch(`/api/media/${id}`, { method: "DELETE" })));
-      toast.success(`Deleted ${ids.length} item${ids.length !== 1 ? "s" : ""}`);
-      handleClearSelection();
-      fetchMedia();
-      fetchFolders();
-    } catch {
-      toast.error("Some items failed to delete");
+    const { succeeded, failed } = await runBulk(ids, (id) => fetch(`/api/media/${id}`, { method: "DELETE" }));
+    if (failed === 0) {
+      toast.success(`Deleted ${succeeded} item${succeeded !== 1 ? "s" : ""}`);
+    } else {
+      toast.error(`Deleted ${succeeded}, but ${failed} item${failed !== 1 ? "s" : ""} failed`);
     }
+    handleClearSelection();
+    fetchMedia();
+    fetchFolders();
   }
 
   async function handleDownloadMedia(mediaItem: MediaAssetFull) {
@@ -259,6 +314,7 @@ export function DashboardClient({ user }: Props) {
     ];
   }
 
+  const selectedFolder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) ?? null : null;
   const starredMedia = media.filter((m) => m.is_starred);
   const regularMedia = media.filter((m) => !m.is_starred);
 
@@ -357,11 +413,42 @@ export function DashboardClient({ user }: Props) {
             </div>
           </div>
 
+          {/* Current folder (the sidebar is hidden on phones, so this is the way back) */}
+          {selectedFolderId && (
+            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setSelectedFolderId(null)}
+                className="flex items-center gap-1 text-sm font-medium text-brand-primary-light hover:text-brand-primary dark:text-brand-accent dark:hover:text-teal-300 transition-colors"
+                aria-label="Back to all media"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                All Media
+              </button>
+              <span className="text-slate-300 dark:text-slate-600">/</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate">
+                  {selectedFolder?.name ?? "Folder"}
+                </h2>
+                {selectedFolder && (
+                  <span className="text-sm text-slate-500 dark:text-slate-400 flex-shrink-0">
+                    ({selectedFolder.media_count})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Media Content */}
           {isLoading ? (
             <MediaGridSkeleton count={10} />
           ) : (
-            <>
+            <div className={isRefreshing ? "opacity-60 transition-opacity" : "transition-opacity"} aria-busy={isRefreshing}>
               {/* Starred Media Section */}
               <StarredMediaSection
                 starredMedia={starredMedia}
@@ -451,8 +538,26 @@ export function DashboardClient({ user }: Props) {
                   description="Upload your first photo or video to get started"
                   action={{ label: "Upload Media", onClick: () => setShowUploadForm(true) }}
                 />
+              ) : selectedFolderId && starredMedia.length === 0 ? (
+                <EmptyState
+                  title="This folder is empty"
+                  description="Upload media into it or move files here from All Media"
+                  action={{ label: "Upload Media", onClick: () => setShowUploadForm(true) }}
+                />
               ) : null}
-            </>
+
+              {hasMore && (
+                <div className="flex justify-center pt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={() => fetchMedia({ append: true })}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? "Loading..." : "Load more"}
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -483,14 +588,18 @@ export function DashboardClient({ user }: Props) {
         selectedCount={selectedMediaIds.size}
         onClearSelection={handleClearSelection}
         onMoveToFolder={async (folderId) => {
-          await Promise.all(Array.from(selectedMediaIds).map(id =>
+          const { succeeded, failed } = await runBulk(Array.from(selectedMediaIds), (id) =>
             fetch(`/api/media/${id}/move`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ folder_id: folderId }),
             })
-          ));
-          toast.success("Moved successfully");
+          );
+          if (failed === 0) {
+            toast.success(`Moved ${succeeded} item${succeeded !== 1 ? "s" : ""}`);
+          } else {
+            toast.error(`Moved ${succeeded}, but ${failed} item${failed !== 1 ? "s" : ""} failed`);
+          }
           handleClearSelection();
           fetchMedia();
           fetchFolders();

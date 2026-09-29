@@ -1,12 +1,12 @@
 "use client";
 
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 const WARNING_BEFORE_MS = 5 * 60 * 1000; // Show warning 5 min before expiry
 
 export function SessionTimeoutWarner() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [showWarning, setShowWarning] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
 
@@ -29,8 +29,8 @@ export function SessionTimeoutWarner() {
   async function handleExtend() {
     setIsExtending(true);
     try {
-      // Trigger a soft sign-in to refresh the session
-      await signIn(undefined, { redirect: false });
+      // Re-fetching the session re-issues the JWT with a fresh expiry.
+      await update();
       setShowWarning(false);
     } catch {
       // ignore

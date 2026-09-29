@@ -12,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,6 +25,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
+        rememberMe: rememberMe ? "true" : "false",
         redirect: false,
       });
 
@@ -33,8 +35,13 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect to dashboard (NextAuth will handle role-based redirect logic if needed)
-      router.push("/dashboard");
+      // Only follow same-site callback paths so the login page can't bounce to another site.
+      const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
+      const destination =
+        callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : "/dashboard";
+      router.push(destination);
       router.refresh();
     } catch (err) {
       setError("An error occurred. Please try again.");
@@ -60,8 +67,12 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             fullWidth
-            autoComplete="email"
-            placeholder="you@taylorproducts.com"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="email"
+            placeholder="you@taylorproducts.net"
           />
 
           <Input
@@ -74,8 +85,23 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
 
+          <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-brand-primary focus:ring-brand-primary-light accent-brand-primary"
+            />
+            <span className="text-sm text-slate-700 dark:text-slate-300">
+              Keep me signed in for 30 days
+              <span className="block text-xs text-slate-500 dark:text-slate-400">
+                Uncheck on a shared device. You&apos;ll be signed out after a day of inactivity instead.
+              </span>
+            </span>
+          </label>
+
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" role="alert">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}

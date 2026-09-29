@@ -41,7 +41,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await sql`
     SELECT id, email, name, password_hash, role, created_at, last_login_at
     FROM users
-    WHERE email = ${email}
+    WHERE LOWER(email) = LOWER(${email.trim()})
     LIMIT 1
   `;
 

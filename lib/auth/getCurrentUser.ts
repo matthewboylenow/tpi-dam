@@ -15,15 +15,15 @@ export interface SessionUser {
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
+  if (!session?.user?.id || !session.user.email) {
     return null;
   }
 
   return {
-    id: (session.user as any).id,
-    email: session.user.email!,
+    id: session.user.id,
+    email: session.user.email,
     name: session.user.name || null,
-    role: (session.user as any).role,
+    role: session.user.role,
   };
 }
 
