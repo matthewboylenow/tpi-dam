@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getDownloadUrl } from "@/lib/utils/download";
 
 export default async function SharePage({ params }: { params: { token: string } }) {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
@@ -98,7 +99,7 @@ export default async function SharePage({ params }: { params: { token: string } 
             </div>
           )}
           <a
-            href={media.blob_url}
+            href={getDownloadUrl(media.blob_url)}
             download
             target="_blank"
             rel="noopener noreferrer"
