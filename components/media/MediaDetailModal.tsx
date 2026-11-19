@@ -11,6 +11,7 @@ import { starMedia, setMediaMarketing } from "@/lib/api/mutations";
 import { USAGE_CHANNELS, USAGE_LABELS, isUsageChannel, type UsageChannel } from "@/lib/usage";
 import { ImageEditor } from "./ImageEditor";
 import { isHeicUrl } from "@/lib/utils/heic";
+import { getDownloadUrl } from "@/lib/utils/download";
 
 type Props = {
   media: MediaAssetFull | null;
@@ -328,7 +329,7 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
           {/* Actions */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <a
-              href={media.blob_url}
+              href={getDownloadUrl(media.blob_url)}
               download
               target="_blank"
               rel="noopener noreferrer"

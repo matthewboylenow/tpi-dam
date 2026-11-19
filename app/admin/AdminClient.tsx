@@ -47,6 +47,7 @@ import {
   runBulk,
   describeBulk,
 } from "@/lib/api/mutations";
+import { downloadOrShareMedia, triggerDownload } from "@/lib/utils/download";
 
 type SortBy = "created_at" | "caption";
 type SortOrder = "desc" | "asc";
@@ -238,28 +239,7 @@ export function AdminClient({ user }: Props) {
   }
 
   async function handleDownloadMedia(mediaItem: MediaAssetFull) {
-    try {
-      // Try to use native share API on mobile
-      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
-        // Fetch the image as a blob
-        const response = await fetch(mediaItem.blob_url);
-        const blob = await response.blob();
-        const file = new File([blob], mediaItem.caption || 'image', { type: blob.type });
-
-        await navigator.share({
-          files: [file],
-          title: mediaItem.caption || 'Media',
-          text: `${mediaItem.caption || 'Media'} from Taylor Products`,
-        });
-      } else {
-        // Fallback to direct download
-        window.open(mediaItem.blob_url, '_blank');
-      }
-    } catch (error) {
-      console.error('Failed to share/download:', error);
-      // Fallback to direct download if share fails
-      window.open(mediaItem.blob_url, '_blank');
-    }
+    await downloadOrShareMedia(mediaItem);
   }
 
   function getMediaMenuItems(mediaItem: MediaAssetFull) {
@@ -380,7 +360,7 @@ export function AdminClient({ user }: Props) {
             </svg>
           ),
           onClick: () => {
-            window.open(media.blob_url, "_blank");
+            triggerDownload(media.blob_url);
           },
         },
         {
