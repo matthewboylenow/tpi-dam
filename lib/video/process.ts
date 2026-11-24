@@ -40,7 +40,6 @@ type VideoInfo = {
 function ffmpegPath(): string {
   if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const staticPath = require("ffmpeg-static") as string | null;
     if (staticPath) return staticPath;
   } catch {
