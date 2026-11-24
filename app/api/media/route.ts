@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { processVideo } from "@/lib/video/process";
 import {
   createMediaAsset,
   getMediaAssets,
@@ -10,6 +12,14 @@ import {
   createMediaSchema,
   mediaFilterSchema,
 } from "@/lib/validation/mediaSchemas";
+
+// Video processing continues after the response is sent (waitUntil), so the
+// function needs enough time to remux a large clip.
+export const maxDuration = 300;
+
+function isVideo(mimeType: string | undefined, url: string) {
+  return (mimeType || "").startsWith("video/") || /\.(mov|mp4|m4v)$/i.test(url);
+}
 
 /**
  * POST /api/media
@@ -43,6 +53,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const video = isVideo(mime_type, blob_url);
+
     // Create media asset record
     const mediaAsset = await createMediaAsset({
       owner_user_id: user.id,
@@ -52,11 +64,22 @@ export async function POST(req: NextRequest) {
       mime_type,
       file_size,
       folder_id: folder_id ?? null,
+      processing_status: video ? "pending" : "done",
     });
 
     // Add tags if provided
     if (tags && tags.length > 0) {
       await addTagsToMedia(mediaAsset.id, tags);
+    }
+
+    // Videos: convert to a streamable MP4 and grab a poster frame after the
+    // response goes out, so the uploader never waits on it.
+    if (video) {
+      waitUntil(
+        processVideo(mediaAsset.id, { budgetMs: 280_000 }).catch((err) =>
+          console.error("Video processing failed:", mediaAsset.id, err)
+        )
+      );
     }
 
     return NextResponse.json(

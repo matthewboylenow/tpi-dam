@@ -13,6 +13,14 @@ export interface MediaAsset {
   reviewed_by: string | null;
   /** Channels it has been used on: "web", "social", "print", "email". */
   used_on: string[];
+  /** Still frame for videos (JPEG in Blob); null until processed. */
+  poster_url: string | null;
+  width: number | null;
+  height: number | null;
+  duration_seconds: number | null;
+  /** Videos: pending → processing → done | failed. Images are always done. */
+  processing_status: "pending" | "processing" | "done" | "failed";
+  processing_error: string | null;
   created_at: Date;
 }
 
@@ -38,6 +46,7 @@ export type CreateMediaAssetInput = {
   mime_type?: string;
   file_size?: number;
   folder_id?: string | null;
+  processing_status?: "pending" | "done";
 };
 
 export type MediaFilterParams = {

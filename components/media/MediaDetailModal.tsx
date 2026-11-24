@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/providers/ToastProvider";
 import { starMedia, setMediaMarketing } from "@/lib/api/mutations";
+import { apiFetch } from "@/lib/api/client";
 import { USAGE_CHANNELS, USAGE_LABELS, isUsageChannel, type UsageChannel } from "@/lib/usage";
 import { ImageEditor } from "./ImageEditor";
 import { isHeicUrl } from "@/lib/utils/heic";
@@ -38,6 +39,7 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
   const [isSaving, setIsSaving] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
   // Escape closes
   useEffect(() => {
@@ -55,6 +57,23 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
   const isImage = media.mime_type?.startsWith("image/");
   const isAdmin = userRole === "admin";
   const isNew = !reviewedAt;
+  const isProcessing = isVideo && (media.processing_status === "pending" || media.processing_status === "processing");
+  const processingFailed = isVideo && media.processing_status === "failed";
+
+  async function handleReprocess() {
+    if (!media) return;
+    setIsReprocessing(true);
+    try {
+      const { result } = await apiFetch<{ success: boolean; result: { action: string } }>(`/api/media/${media.id}/process`, { method: "POST" });
+      toast.success(`Video ${result.action}`);
+      onStarToggle?.();
+      onClose();
+    } catch (err) {
+      toast.error((err as Error).message || "Processing failed");
+    } finally {
+      setIsReprocessing(false);
+    }
+  }
 
   function notify(patch: Partial<MediaAssetFull>) {
     onChange?.(patch);
@@ -146,8 +165,16 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
         {/* Media */}
         <div className="relative bg-slate-950 flex items-center justify-center lg:flex-1 min-h-[40vh] lg:min-h-[60vh] flex-shrink-0">
           {isVideo ? (
-            <video src={media.blob_url} controls playsInline className="w-full h-full max-h-[50vh] lg:max-h-[90vh] object-contain">
-              Your browser does not support the video tag.
+            <video
+              key={media.blob_url}
+              controls
+              playsInline
+              preload="metadata"
+              poster={media.poster_url ?? undefined}
+              className="w-full h-full max-h-[50vh] lg:max-h-[90vh] object-contain"
+            >
+              <source src={media.blob_url} type={media.mime_type || undefined} />
+              Your browser can&apos;t play this video. Use the download button below.
             </video>
           ) : imageFailed ? (
             <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-slate-300">
@@ -157,13 +184,16 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
               </p>
             </div>
           ) : (
+            // Optimized at screen size; the original is behind "Download original"
             <Image
               src={media.blob_url}
               alt={media.caption || "Media asset"}
-              width={1600}
-              height={1200}
+              width={media.width ?? 1600}
+              height={media.height ?? 1200}
+              sizes="(max-width: 1024px) 100vw, 1100px"
+              quality={82}
+              priority
               className="w-full h-auto max-h-[50vh] lg:max-h-[90vh] object-contain"
-              unoptimized
               onError={() => setImageFailed(true)}
             />
           )}
@@ -219,6 +249,30 @@ export function MediaDetailModal({ media, onClose, userRole, onChange, onStarTog
                 </button>
               </div>
             </div>
+
+            {/* Video processing state */}
+            {(isProcessing || processingFailed) && (
+              <div className={clsx(
+                "rounded-lg border px-3.5 py-3 text-sm",
+                processingFailed
+                  ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200"
+                  : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300"
+              )}>
+                {isProcessing ? (
+                  <p>Converting for web playback. It may not play in every browser until this finishes, usually within a minute.</p>
+                ) : (
+                  <>
+                    <p className="font-medium">Conversion failed; the original is shown.</p>
+                    {media.processing_error && <p className="mt-1 font-mono text-[11px] break-words opacity-80">{media.processing_error}</p>}
+                  </>
+                )}
+                {isAdmin && (
+                  <Button size="sm" variant="secondary" className="mt-2" disabled={isReprocessing} onClick={handleReprocess}>
+                    {isReprocessing ? "Processing…" : "Run conversion now"}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Marketing status */}
             <div

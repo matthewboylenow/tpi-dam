@@ -103,15 +103,16 @@ export async function createMediaAsset(
     mime_type = null,
     file_size = null,
     folder_id = null,
+    processing_status = "done",
   } = input;
 
   const result = await sql`
     INSERT INTO media_assets (
-      owner_user_id, blob_url, caption, client_name, mime_type, file_size, folder_id
+      owner_user_id, blob_url, caption, client_name, mime_type, file_size, folder_id, processing_status
     )
     VALUES (
       ${owner_user_id}, ${blob_url}, ${caption}, ${client_name},
-      ${mime_type}, ${file_size}, ${folder_id}
+      ${mime_type}, ${file_size}, ${folder_id}, ${processing_status}
     )
     RETURNING *
   `;

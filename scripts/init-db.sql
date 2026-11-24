@@ -36,6 +36,12 @@ CREATE TABLE IF NOT EXISTS media_assets (
   reviewed_at TIMESTAMPTZ,
   reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
   used_on TEXT[] NOT NULL DEFAULT '{}',
+  poster_url TEXT,
+  width INTEGER,
+  height INTEGER,
+  duration_seconds REAL,
+  processing_status TEXT NOT NULL DEFAULT 'done',
+  processing_error TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ
 );

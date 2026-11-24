@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MediaAssetFull } from "@/types/media";
 import { clsx } from "clsx";
 import { CardMenu } from "@/components/ui/CardMenu";
@@ -31,72 +31,48 @@ function PhotoThumbnail({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function VideoThumbnail({ src }: { src: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+function formatDuration(seconds: number | null) {
+  if (!seconds || !Number.isFinite(seconds)) return null;
+  const m = Math.floor(seconds / 60);
+  const sec = Math.round(seconds % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Video tile. Uses the poster frame made after upload; never downloads the
+ * video itself (a grid of videos used to fetch every one of them).
+ */
+function VideoThumbnail({ media }: { media: MediaAssetFull }) {
   const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    function capture() {
-      if (!video || !canvas) return;
-      try {
-        canvas.width = video.videoWidth || 320;
-        canvas.height = video.videoHeight || 180;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const url = canvas.toDataURL("image/jpeg", 0.7);
-        setThumbUrl(url);
-      } catch {
-        setFailed(true);
-      }
-    }
-
-    function onLoaded() {
-      video!.currentTime = 1;
-    }
-    function onSeeked() {
-      capture();
-    }
-    function onError() {
-      setFailed(true);
-    }
-
-    video.addEventListener("loadedmetadata", onLoaded);
-    video.addEventListener("seeked", onSeeked);
-    video.addEventListener("error", onError);
-    video.load();
-
-    return () => {
-      video.removeEventListener("loadedmetadata", onLoaded);
-      video.removeEventListener("seeked", onSeeked);
-      video.removeEventListener("error", onError);
-    };
-  }, [src]);
+  const processing = media.processing_status === "pending" || media.processing_status === "processing";
+  const duration = formatDuration(media.duration_seconds);
 
   return (
-    <div className="relative w-full h-full">
-      {/* Hidden video + canvas for thumbnail extraction */}
-      <video ref={videoRef} src={src} preload="metadata" muted playsInline crossOrigin="anonymous" className="hidden" />
-      <canvas ref={canvasRef} className="hidden" />
-
-      {thumbUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+    <div className="relative w-full h-full bg-slate-800">
+      {media.poster_url && !failed ? (
+        <Image
+          src={media.poster_url}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          onError={() => setFailed(true)}
+        />
       ) : (
-        <div className="flex h-full items-center justify-center bg-slate-800">
-          <span className="eyebrow text-slate-400">Video</span>
+        <div className="flex h-full flex-col items-center justify-center gap-1 text-slate-400">
+          <span className="eyebrow text-slate-400">{processing ? "Processing" : "Video"}</span>
+          {processing && <span className="text-[11px]">Preview coming</span>}
         </div>
       )}
-      {/* Play mark */}
-      <div className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
-        <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" />
-        </svg>
+      <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+        {duration && (
+          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">{duration}</span>
+        )}
+        <span className="w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
+          <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </span>
       </div>
     </div>
   );
@@ -226,7 +202,7 @@ export function MediaCard({
         )}
 
         {isVideo ? (
-          <VideoThumbnail src={media.blob_url} />
+          <VideoThumbnail media={media} />
         ) : (
           media.blob_url && <PhotoThumbnail src={media.blob_url} alt={media.caption || "Media asset"} />
         )}

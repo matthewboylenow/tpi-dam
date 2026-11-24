@@ -1,10 +1,7 @@
 /**
- * Apply the marketing review + usage migration.
- * Run with: npm run migrate:review
- *
- * Adds reviewed_at, reviewed_by, used_on and updated_at to media_assets,
- * plus indexes, and backfills existing uploads as reviewed. Every
- * statement is IF NOT EXISTS, so it is safe to run more than once.
+ * Apply one SQL migration file, statement by statement.
+ * Run with: npx tsx scripts/run-migration.ts scripts/migrations/<file>.sql
+ * (npm run migrate:review and migrate:video are shortcuts.)
  *
  * Reads DATABASE_URL or POSTGRES_URL from the environment or .env.local.
  */
@@ -32,8 +29,15 @@ async function main() {
     process.exit(1);
   }
 
+  const path = process.argv[2];
+  if (!path || !existsSync(path)) {
+    console.error("Usage: npx tsx scripts/run-migration.ts scripts/migrations/<file>.sql");
+    process.exit(1);
+  }
+
   const pool = createPool({ connectionString });
-  const file = readFileSync("scripts/migrations/add_review_and_usage.sql", "utf8");
+  console.log(`Applying ${path}`);
+  const file = readFileSync(path, "utf8");
   const statements = file
     .split("\n")
     .filter((line) => !line.trim().startsWith("--"))
